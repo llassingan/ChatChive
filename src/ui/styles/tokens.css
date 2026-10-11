@@ -1,0 +1,306 @@
+/*
+  Design tokens — ported from DESIGN.md §1 (color, sender colors, typography,
+  spacing/radius/size). Backlog E1-2.
+
+  Themes:
+    :root               → dark (the 2024+ WhatsApp redesign, DESIGN §1.1). Default.
+    [data-theme='light']   → light (DESIGN §1.1 theme-variants table).
+    [data-theme='classic'] → classic dark, pre-2024 blue-grey (same table).
+
+  Accessibility (R-25): --text-secondary is the timestamp/subtitle color and sits
+  on bubbles at 11-12px (normal text, needs 4.5:1). DESIGN §5 flags it on
+  --bubble-out as a risk. Verified values per theme:
+    - dark    secondary = rgba(255,255,255,0.65) → 5.17:1 on --bubble-out #144D37.
+    - light   secondary = #54646D               → 5.54:1 on --bubble-out #D9FDD3,
+              5.13:1 on --bg-chat #EFEAE2 (darkened from WhatsApp's #667781, which
+              scores 4.19:1 / 3.88:1 and fails AA for 12px text).
+    - classic secondary = #C0CED6               → 4.95:1 on --bubble-out #005C4B
+              (lightened from #8696A0, which scores 2.61:1 and fails AA).
+  --text-tertiary is the composer placeholder only ("Type a message"); it is
+  intentionally low-emphasis and mirrors WhatsApp. It does not carry essential
+  content. See src/ui/README.md for the full contrast log.
+*/
+
+:root {
+  /* ---- Color: surfaces (dark, mobile values; web overrides below) ---- */
+  --bg-chat: #0b0b0b;
+  --bg-header: rgba(18, 18, 18, 0.92);
+  --bg-composer: #121212;
+  --bg-input: #1f2121;
+  --bg-panel: #161717;
+  --bg-rail: #1d1f1f;
+  --bg-list-hover: #242626;
+  --bg-list-active: #2e2f2f;
+  --wallpaper-stroke: rgba(255, 255, 255, 0.04);
+
+  /* ---- Color: bubbles & quotes ---- */
+  --bubble-in: #242626;
+  --bubble-out: #144d37;
+  --quote-in: #1b1d1d;
+  --quote-out: #0f3d2c;
+  --card-inner: #1b1d1d;
+  --icon-circle: #141515;
+
+  /* ---- Color: text ---- */
+  --text-primary: #ffffff;
+  /* 0.65 per DESIGN §5 recommendation (0.60 clears AA at 4.65:1 but with no margin). */
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-tertiary: rgba(255, 255, 255, 0.4);
+
+  /* ---- Color: accents & status ---- */
+  --icon: #ffffff;
+  --accent: #21c063;
+  --accent-on: #0b0b0b;
+  --tick-read: #53bdeb;
+  --tick-sent: rgba(255, 255, 255, 0.6);
+  --danger: #f15c6d;
+  --mention: #53bdeb;
+
+  /* ---- Color: pills, fabs, dividers, banners, badges ---- */
+  --pill-bg: #1c1d1d;
+  --fab-bg: #1f2121;
+  --divider: rgba(255, 255, 255, 0.08);
+  --banner-bg: #103529;
+  --badge-bg: #21c063;
+  --community-tile: #3b1f2b;
+  --community-glyph: #ff5c8a;
+
+  /* Bubble elevation: none in dark mode (DESIGN §1.4). Floating buttons only. */
+  --shadow-bubble: none;
+  --shadow-fab: 0 1px 3px rgba(0, 0, 0, 0.4);
+
+  /* ---- Typography: font stack (DESIGN §1.3). System fonts only, no web fonts (PRD S-2). ---- */
+  --font-ui:
+    -apple-system, 'SF Pro Text', 'Segoe UI', 'Helvetica Neue', Roboto, 'Noto Sans', Arial,
+    sans-serif;
+  --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+
+  /* Type scale — rem-based so OS/browser font scaling works (DESIGN §5, R-25).
+     Base is the mobile message size (17px) at the default 16px root.
+     Pairs are size / line-height. Weights live alongside. */
+  --fs-message: 1.0625rem; /* 17px */
+  --lh-message: 1.375rem; /* 22px */
+  --fs-sender: 0.9375rem; /* 15px */
+  --lh-sender: 1.25rem; /* 20px */
+  --fs-handle: 0.875rem; /* 14px */
+  --fs-quote-sender: 0.9375rem; /* 15px */
+  --fs-quote-text: 0.875rem; /* 14px */
+  --lh-quote-text: 1.1875rem; /* 19px */
+  --fs-timestamp: 0.75rem; /* 12px */
+  --fs-date-pill: 0.875rem; /* 14px */
+  --fs-header-title: 1.125rem; /* 18px */
+  --fs-header-subtitle: 0.875rem; /* 14px */
+  --fs-emoji-jumbo-3: 2.25rem; /* 36px (2-3 emoji only) */
+  --fs-emoji-jumbo-1: 3rem; /* 48px (single emoji) */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* ---- Spacing scale (DESIGN §1.4) ---- */
+  --space-1: 2px;
+  --space-2: 3px;
+  --space-3: 7px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 16px;
+  --space-8: 24px;
+
+  /* ---- Radius (DESIGN §1.4, mobile) ---- */
+  --radius-bubble: 18px;
+  --radius-quote: 12px;
+  --radius-media: 15px;
+  --radius-pill: 8px;
+  --radius-card: 14px;
+
+  /* ---- Sizes (DESIGN §1.4, mobile) ---- */
+  --size-avatar: 36px;
+  --size-avatar-col: 46px;
+  --size-header: 52px;
+  --size-composer: 50px;
+  --size-fab: 40px;
+  --size-tail-w: 8px;
+  --size-tail-h: 13px;
+  --quote-bar-w: 4px;
+  --media-inset: 3px;
+  --bubble-max: 82%;
+  --bubble-min: 56px;
+  --sticker-max: 160px;
+
+  /* ---- Focus ring (DESIGN §5, R-32) ---- */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* ---- Sender-name colors (DESIGN §1.2), indexable 0-15.
+     Group members hash to one of these; same color for name, quote bar, avatar tint. ---- */
+  --sender-0: #53bdeb; /* blue   */
+  --sender-1: #06cf9c; /* green  */
+  --sender-2: #fc9775; /* peach  */
+  --sender-3: #ff72a1; /* pink   */
+  --sender-4: #42c7b8; /* teal   */
+  --sender-5: #f1795c; /* salmon */
+  --sender-6: #a791ff; /* purple */
+  --sender-7: #ffd279; /* yellow */
+  --sender-8: #25d366; /* lime   */
+  --sender-9: #e26ab6; /* magenta */
+  --sender-10: #7f66ff; /* violet */
+  --sender-11: #5fb8f2; /* sky    */
+  --sender-12: #dfb43f; /* mustard */
+  --sender-13: #fa6533; /* orange */
+  --sender-14: #a5b337; /* olive  */
+  --sender-15: #c68c5d; /* tan    */
+}
+
+/* ---- Web / desktop surface overrides (DESIGN §1.1 "Web" column) ----
+   The bubble/text/accent tokens are shared; only the surrounding surfaces,
+   radii and sizes change on wide viewports. */
+@media (min-width: 768px) {
+  :root {
+    --bg-chat: #161717;
+    --bg-header: #161717;
+    --bg-composer: #161717;
+    --bg-input: #242626;
+    --quote-in: #1d1f1f;
+    --card-inner: #1d1f1f;
+    --icon-circle: #1d1f1f;
+    --text-primary: #fafafa;
+    --icon: rgba(255, 255, 255, 0.75);
+    --pill-bg: #1d1f1f;
+
+    /* Web radii/sizes (DESIGN §1.4 "Web" column) */
+    --radius-bubble: 7.5px;
+    --radius-quote: 6px;
+    --radius-media: 6px;
+    --radius-pill: 7.5px;
+    --radius-card: 6px;
+    --size-avatar: 28px;
+    --size-avatar-col: 38px;
+    --size-header: 60px;
+    --size-composer: 62px;
+    --size-fab: 42px;
+    --bubble-max: 65%;
+    --bubble-min: 48px;
+    --sticker-max: 190px;
+
+    /* Web type scale (DESIGN §1.3 "Web" column) */
+    --fs-message: 0.8875rem; /* 14.2px */
+    --lh-message: 1.1875rem; /* 19px */
+    --fs-sender: 0.8rem; /* 12.8px */
+    --lh-sender: 1.125rem; /* 18px */
+    --fs-handle: 0.75rem; /* 12px */
+    --fs-timestamp: 0.6875rem; /* 11px */
+    --fs-date-pill: 0.78125rem; /* 12.5px */
+    --fs-header-title: 1rem; /* 16px */
+    --fs-header-subtitle: 0.8125rem; /* 13px */
+    --fs-emoji-jumbo-3: 2rem; /* 32px */
+    --fs-emoji-jumbo-1: 2.5rem; /* 40px */
+  }
+}
+
+/* =========================================================================
+   Light theme (DESIGN §1.1 theme-variants table). Opt-in via <html data-theme>.
+   Bubbles and pills get a subtle shadow in light mode.
+   ========================================================================= */
+[data-theme='light'] {
+  --bg-chat: #efeae2;
+  --bg-header: #f6f5f3;
+  --bg-composer: #f0f2f5;
+  --bg-input: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-rail: #f0f2f5;
+  --bg-list-hover: #f5f6f6;
+  --bg-list-active: #e9edef;
+  --wallpaper-stroke: rgba(11, 20, 26, 0.04);
+
+  --bubble-in: #ffffff;
+  --bubble-out: #d9fdd3;
+  --quote-in: #f5f6f6;
+  --quote-out: #d1f4cc;
+  --card-inner: #f5f6f6;
+  --icon-circle: #f0f2f5;
+
+  --text-primary: #111b21;
+  /* Darkened from WhatsApp's #667781 to clear AA on bubble-out and bg-chat. */
+  --text-secondary: #54646d;
+  --text-tertiary: #8696a0;
+
+  --icon: #54656f;
+  --accent: #1daa61;
+  --accent-on: #ffffff;
+  --tick-read: #53bdeb;
+  --tick-sent: #667781;
+  --danger: #ea0038;
+  --mention: #027eb5;
+
+  --pill-bg: #ffffff;
+  --fab-bg: #ffffff;
+  --divider: #e9edef;
+  --banner-bg: #d9f7e6;
+  --badge-bg: #1daa61;
+
+  --shadow-bubble: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+
+  /* Sender colors darkened for contrast on white (DESIGN §1.1 note). */
+  --sender-0: #1f7aec;
+  --sender-3: #d3396d;
+  --sender-13: #c75300;
+  --sender-1: #008069;
+}
+
+@media (min-width: 768px) {
+  [data-theme='light'] {
+    --bg-header: #f0f2f5;
+  }
+}
+
+/* =========================================================================
+   Classic dark (pre-2024 blue-grey) (DESIGN §1.1 theme-variants table).
+   ========================================================================= */
+[data-theme='classic'] {
+  --bg-chat: #0b141a;
+  --bg-header: #202c33;
+  --bg-composer: #202c33;
+  --bg-input: #2a3942;
+  --bg-panel: #111b21;
+  --bg-rail: #202c33;
+  --bg-list-hover: #202c33;
+  --bg-list-active: #2a3942;
+  --wallpaper-stroke: rgba(255, 255, 255, 0.03);
+
+  --bubble-in: #202c33;
+  --bubble-out: #005c4b;
+  --quote-in: #1d282f;
+  --quote-out: #025144;
+  --card-inner: #1d282f;
+  --icon-circle: #1d282f;
+
+  --text-primary: #e9edef;
+  /* Lightened from WhatsApp's #8696A0 to clear AA on bubble-out #005C4B. */
+  --text-secondary: #c0ced6;
+  --text-tertiary: #8696a0;
+
+  --icon: rgba(233, 237, 239, 0.75);
+  --accent: #00a884;
+  --accent-on: #0b141a;
+  --tick-read: #53bdeb;
+  --tick-sent: rgba(233, 237, 239, 0.6);
+  --danger: #f15c6d;
+  --mention: #53bdeb;
+
+  --pill-bg: #182229;
+  --fab-bg: #202c33;
+  --divider: rgba(134, 150, 160, 0.15);
+  --banner-bg: #103529;
+  --badge-bg: #00a884;
+
+  --shadow-bubble: none;
+}
+
+/* Respect reduced motion globally (DESIGN §4): callers should still honor it,
+   but we null our own token here so motion built on it collapses to instant. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --shadow-fab: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+}

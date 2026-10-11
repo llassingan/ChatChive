@@ -1,0 +1,35 @@
+/*
+  Global baseline. Imports the design tokens (E1-2) and consumes them, so the
+  whole app resolves color/type/spacing from one source. The real chat styling
+  lives with its components (E4/E5/E6); keep this file to resets + token wiring.
+*/
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-message);
+  line-height: var(--lh-message);
+  background: var(--bg-chat);
+  color: var(--text-primary);
+  /* Respect iOS safe areas (PRD F-RES-4). */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* Visible focus ring on anything focusable (R-32). Keyboard-only via
+   :focus-visible so a mouse click does not leave a ring behind. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}

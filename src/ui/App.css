@@ -1,0 +1,79 @@
+/*
+  Placeholder-shell styling. Proves the E1-2 tokens resolve end to end (color,
+  type, spacing, radius, accent, sender colors). This whole file is temporary:
+  the real landing page lands in E3-1 and will replace it.
+*/
+.app-shell {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.app-shell__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.app-shell__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-card);
+  background: var(--accent);
+  color: var(--accent-on);
+}
+
+.app-shell h1 {
+  margin: 0;
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+  line-height: 1.2;
+}
+
+.app-shell p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-message);
+  line-height: var(--lh-message);
+}
+
+/* A token-check row: one bubble per theme-shared surface, to confirm the
+   variables actually resolve at runtime. Removed when the real UI lands. */
+.token-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.token-check__bubble {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-bubble);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-bubble);
+  max-width: var(--bubble-max);
+}
+
+.token-check__bubble--in {
+  background: var(--bubble-in);
+}
+
+.token-check__bubble--out {
+  background: var(--bubble-out);
+}
+
+.token-check__time {
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  margin-left: var(--space-4);
+}
+
+.disclaimer {
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
