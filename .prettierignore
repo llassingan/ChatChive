@@ -1,0 +1,13 @@
+dist
+coverage
+node_modules
+.playwright
+playwright-report
+.kiro
+pnpm-lock.yaml
+package-lock.json
+
+# Hand-authored planning/spec docs — prose, not reflowed by Prettier
+PRD.md
+DESIGN.md
+BACKLOG.md

@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Test artifacts
+coverage/
+.playwright/
+playwright-report/
+test-results/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# Personal data — never commit real chat exports (PRD §E2-1, S-4)
+*.zip
+sample/
+WhatsApp Chat with*
+
+
+.kiro
+.omp
+BACKLOG.MD
+PRD.MD

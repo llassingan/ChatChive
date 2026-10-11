@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      Privacy lock-down (PRD §8 S-1,S-2,S-3,S-5; backlog E1-3). Finalized.
+      Required set (S-2): default-src / connect-src / img-src / media-src /
+      script-src. The rest is hardening:
+        style-src 'self' 'unsafe-inline' — Vite injects component styles as
+          inline <style>; no remote stylesheet is ever loaded.
+        font-src 'self'                  — system fonts only, no Google Fonts (S-2).
+        worker-src 'self' blob:          — the parse/unzip worker (E2-6).
+        object-src/base-uri/form-action  — lock down plugins, base tag, form posts.
+      frame-ancestors 'none' is deliberately NOT in this meta tag: browsers ignore
+      frame-ancestors delivered via <meta> and log an error for it, so it belongs
+      only in the response-header mirror the static host adds (plus X-Frame-Options).
+      See src/ui/README.md "CSP host-header mirror" and backlog E1-4 (deploy).
+      No third-party script, font, CDN, analytics or error reporting (S-2).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <!-- Inline favicon (data URI): no network request, satisfies the no-network promise. -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2321C063'/%3E%3Cpath d='M5 12 19 5l-3.5 14-3.9-5.6L5 12Z' fill='%230B0B0B'/%3E%3C/svg%3E"
+    />
+    <meta
+      name="description"
+      content="Open a WhatsApp chat export in your browser. Nothing is uploaded. Not affiliated with WhatsApp or Meta."
+    />
+    <title>ChatChive: read your chat export privately</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
