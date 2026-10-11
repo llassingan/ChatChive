@@ -1,0 +1,9 @@
+02/06/2026, 21.36 - Pesan dan panggilan dienkripsi secara end-to-end. Hanya orang dalam chat ini yang dapat membaca, mendengarkan, atau membagikannya.
+27/06/2026, 08.10 - Dani Prata: Halo kak, mau tanya soal pesanan kemarin
+27/06/2026, 08.12 - Warung Pagi: Siap kak, pesanan nomor berapa ya
+28/06/2026, 09.00 - Dani Prata: Nomor 1420
+28/06/2026, 09.01 - Dani Prata: IMG-20260628-WA0000.jpg (file attached)
+Ini bukti transfernya kak
+28/06/2026, 09.15 - Warung Pagi: Sudah masuk ya kak terima kasih
+13/07/2026, 19.45 - Dani Prata: Besok ready lagi?
+13/07/2026, 19.50 - Warung Pagi:
