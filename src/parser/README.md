@@ -84,6 +84,18 @@ extends a sender that stands alone elsewhere. `detectGroup` is >2 senders or a g
 notice, and `guessMeId` returns the single non-title sender for a personal chat (null for
 a group, where the picker asks instead).
 
+### `me.ts` (E3-4: F-NAV-1)
+
+"Which one is you?" resolution, kept in the parser track because it is pure chat
+logic rather than view state. `alignToMe(chat, meId)` re-derives `outgoing` from
+a chosen participant id (or `null` for "Nobody") without a re-parse, which is
+what lets the chat view re-align instantly after the picker closes: the archive
+session is already gone by then (F-NAV-6). It returns the same object when the
+choice matches the current guess, so an unchanged answer costs nothing on a
+100k-message chat. `needsMeChoice` decides whether to ask outright (a group with
+no filename signal) or trust the heuristic (a personal chat). `normalizeMeId`
+guards against an id that is not in the chat.
+
 ### `zip.ts` (E2-6: F-IMP-2, S-6)
 
 A thin `fflate` wrapper that lists entries without decompressing, drops unsafe paths
