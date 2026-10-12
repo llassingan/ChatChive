@@ -151,23 +151,65 @@
   --focus-offset: 2px;
 
   /* ---- Sender-name colors (DESIGN §1.2), indexable 0-15.
-     Group members hash to one of these; same color for name, quote bar, avatar tint. ---- */
-  --sender-0: #53bdeb; /* blue   */
-  --sender-1: #06cf9c; /* green  */
-  --sender-2: #fc9775; /* peach  */
-  --sender-3: #ff72a1; /* pink   */
-  --sender-4: #42c7b8; /* teal   */
-  --sender-5: #f1795c; /* salmon */
-  --sender-6: #a791ff; /* purple */
-  --sender-7: #ffd279; /* yellow */
-  --sender-8: #25d366; /* lime   */
-  --sender-9: #e26ab6; /* magenta */
-  --sender-10: #7f66ff; /* violet */
-  --sender-11: #5fb8f2; /* sky    */
-  --sender-12: #dfb43f; /* mustard */
-  --sender-13: #fa6533; /* orange */
-  --sender-14: #a5b337; /* olive  */
-  --sender-15: #c68c5d; /* tan    */
+     Group members hash to one of these; same color for name, quote bar, avatar tint.
+     DESIGN lists sixteen hues sampled from screenshots. Several of the sampled
+     values are decorative tints that fail AA as 12-15px text on a bubble, so each
+     hue here is the DESIGN hue moved along its own lightness axis to clear 4.5:1
+     on --bubble-in (dark and classic) or on --bubble-in white (light). The hue
+     and saturation are kept, so a member still reads as "blue" or "peach".
+     Verified pairs are in src/ui/README.md. ---- */
+  --sender-0: #55beeb; /* blue   */
+  --sender-1: #06d29e; /* green  */
+  --sender-2: #fc9876; /* peach  */
+  --sender-3: #ff73a2; /* pink   */
+  --sender-4: #44c8b9; /* teal   */
+  --sender-5: #f17a5e; /* salmon */
+  --sender-6: #a892ff; /* purple */
+  --sender-7: #ffd27a; /* yellow */
+  --sender-8: #25d567; /* lime   */
+  --sender-9: #e26bb7; /* magenta */
+  --sender-10: #907aff; /* violet */
+  --sender-11: #61b9f2; /* sky    */
+  --sender-12: #dfb541; /* mustard */
+  --sender-13: #fa6735; /* orange */
+  --sender-14: #a7b538; /* olive  */
+  --sender-15: #c78d5f; /* tan    */
+
+  /* ---- Letter-avatar tints (DESIGN §3.4). A filled circle per sender hue with
+     a pale letter on top. One set for all themes: each background clears 4.6:1
+     against white letters and stays distinct from both bubble colors (dark
+     #242626 and light #FFFFFF), so a personal chat avatar never disappears into
+     the bubble behind it. ---- */
+  --avatar-0: #075a7d;
+  --avatar-1: #00664c;
+  --avatar-2: #a32900;
+  --avatar-3: #ad003a;
+  --avatar-4: #156058;
+  --avatar-5: #a32405;
+  --avatar-6: #4314ff;
+  --avatar-7: #754e00;
+  --avatar-8: #0b652d;
+  --avatar-9: #9e146c;
+  --avatar-10: #3f1aff;
+  --avatar-11: #045990;
+  --avatar-12: #6a510b;
+  --avatar-13: #a32900;
+  --avatar-14: #535b15;
+  --avatar-15: #794820;
+  /* Letter color on an --avatar-* circle; white clears 4.6:1 on all sixteen. */
+  --avatar-letter: #ffffff;
+
+  /* ---- Chat-view pill and notice text ----
+     Date separators, system pills and sticker time pills share --pill-bg. In dark
+     and classic those themes' --text-primary/--text-secondary already clear AA on
+     the pill, so the roles alias them; light mode overrides both below because
+     --text-secondary on a white pill is fine but the pill sits on the beige page
+     and needs the same value as anywhere else. --notice-encryption is the
+     DESIGN §3.6 lock tint, which is legible on the dark pills but far too light
+     on a white one. */
+  --pill-text: var(--text-primary);
+  --pill-text-secondary: var(--text-secondary);
+  --notice-encryption: #ffd279;
 }
 
 /* ---- Web / desktop surface overrides (DESIGN §1.1 "Web" column) ----
@@ -269,11 +311,30 @@
 
   --shadow-bubble: 0 1px 0.5px rgba(11, 20, 26, 0.13);
 
-  /* Sender colors darkened for contrast on white (DESIGN §1.1 note). */
-  --sender-0: #1f7aec;
-  --sender-3: #d3396d;
-  --sender-13: #c75300;
-  --sender-1: #008069;
+  /* Sender colors darkened for contrast on white (DESIGN §1.1 note names this
+     need; the sampled hues are too light to read at 12-15px on #FFFFFF). */
+  --sender-0: #147dab;
+  --sender-1: #048464;
+  --sender-2: #d93a05;
+  --sender-3: #e8004d;
+  --sender-4: #268177;
+  --sender-5: #d73912;
+  --sender-6: #7755ff;
+  --sender-7: #9e6900;
+  --sender-8: #178540;
+  --sender-9: #d32995;
+  --sender-10: #7054ff;
+  --sender-11: #0f79be;
+  --sender-12: #917018;
+  --sender-13: #d63a05;
+  --sender-14: #707a25;
+  --sender-15: #a16839;
+
+  /* White pill text on a white pill needs the page's primary ink, and the lock
+     tint has to darken to read on it. */
+  --pill-text: #111b21;
+  --pill-text-secondary: #54646d;
+  --notice-encryption: #8a6400;
 }
 
 @media (min-width: 768px) {
@@ -326,6 +387,9 @@
   --border-strong: #6e7a81;
   --banner-bg: #103529;
   --badge-bg: #00a884;
+
+  /* Sender hue nudged for AA on --bubble-in #202C33 (DESIGN §1.2). */
+  --sender-10: #9580ff;
 
   --shadow-bubble: none;
 }
