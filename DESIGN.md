@@ -18,7 +18,6 @@ All colors and sizes are measured from the screenshots and are approximate. Mobi
 ---
 
 ## 1. Design tokens
-You are a senior tech lead! let start this project by read this  PRD.md  249 lines  and then start do this  BACKLOG.md  273 lines  . you can delegate your task to margaerys FE and tyrion BE for this work, and use natislop skill!
 
 ### 1.1 Color (dark theme)
 

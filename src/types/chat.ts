@@ -1,5 +1,5 @@
 /**
- * Shared data model — the contract between the parsing track (src/parser, owned
+ * Shared data model: the contract between the parsing track (src/parser, owned
  * by the backend specialist) and the view track (src/ui, owned by the frontend
  * specialist). Changing a type here is a cross-track change: raise it with the
  * tech lead first.
@@ -71,7 +71,7 @@ export interface Participant {
 /**
  * Discriminated union over message kinds (F-PAR-5). Every message carries the
  * common fields; `kind` selects the extra payload. Unknown content never
- * throws — it degrades to a `text` message (F-PAR-10, E2-4).
+ * throws: it degrades to a `text` message (F-PAR-10, E2-4).
  */
 export type MessageKind = 'text' | 'media' | 'system' | 'deleted' | 'call' | 'empty';
 
@@ -126,7 +126,7 @@ export interface CallMessage extends MessageBase {
   durationSec?: number;
 }
 
-/** Empty body — "Message not included in export" (F-PAR-5, F-VIEW-12). */
+/** Empty body: "Message not included in export" (F-PAR-5, F-VIEW-12). */
 export interface EmptyMessage extends MessageBase {
   kind: 'empty';
 }
