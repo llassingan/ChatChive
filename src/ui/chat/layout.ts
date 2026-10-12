@@ -138,3 +138,30 @@ export function activeDayLabel(
   }
   return current;
 }
+
+/**
+ * Cheap structural test: could this body be taller than a plain line? True when
+ * any line starts a fence, a quote or a list marker, or when the text holds any
+ * codepoint outside Latin-1, which is the only way an emoji can reach us.
+ *
+ * This exists because the virtualizer calls `estimateSize` for **every** index
+ * the first time it computes the total size, not only for the visible window:
+ * measured against the pinned `@tanstack/virtual-core`, one `getTotalSize()` on
+ * a 100,000-row chat ran the callback exactly 100,000 times. That makes this
+ * function the hottest thing in the mount path, and `formatText`'s ~8us per call
+ * is ~1.45s across 100k rows, so the real work is paid only by the rows that
+ * actually look structured.
+ *
+ * It is written **permissively on purpose**. A false positive costs one
+ * `formatText` call on one row; a false negative would seed that row from the
+ * wrong shape. So the alternatives are looser than the tokenizer's (`[ \t]*` for
+ * the indent, `>` with no following space) and non-Latin-1 is flagged wholesale
+ * rather than counting codepoints. One regex, one pass, no per-line split, and
+ * no state: there is no `g` flag, so `.test` is safe to call from anywhere.
+ */
+const STRUCTURED_SHAPE = /(?:^[ \t]*(?:```|>|[-*][ \t]|\d+\.[ \t]))|[\u0100-\u{10ffff}]/mu;
+
+/** Whether a body might carry a block or an emoji, and so need a real estimate. */
+export function looksStructured(text: string): boolean {
+  return STRUCTURED_SHAPE.test(text);
+}

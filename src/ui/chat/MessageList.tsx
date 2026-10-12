@@ -12,11 +12,13 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Chat } from '../../types/chat.ts';
+import { formatText } from '../formatText.ts';
 import { Icon } from '../icons/index.ts';
 import {
   activeDayLabel,
   buildRows,
   dayLabelByIndex,
+  looksStructured,
   participantOf,
   type ChatRow,
   type MessageRow,
@@ -44,13 +46,36 @@ const PIN_FRAMES = 30;
  * Seed height per row so the first measurement pass lands near the real height
  * and the bottom jump is small. Rows are measured for real once mounted, so this
  * only affects the first frame (E4-1).
+ *
+ * Text is the hard case, because E4-6 lets one message carry blocks and jumbo
+ * emoji: the plain `lines * 22` estimate under-counts a row holding a fenced
+ * block or a list by whatever the blocks cost, and under-counts a jumbo row by
+ * two to three times. A bad seed makes the first measurement pass jumpy, and the
+ * bottom pin only runs for `PIN_FRAMES`, so the shape is read here (§4.9).
+ *
+ * The shape is only read for a row that `looksStructured` (layout.ts) says might
+ * have one.
+ * A plain message returns the same number it always did, and pays ~0.05us for
+ * the answer instead of ~8us for a tokenization whose result it cannot use.
  */
 function estimateRow(row: MessageRow['message']): number {
   if (row.kind === 'media') return 150;
   if (row.kind === 'call') return 84;
   if (row.kind === 'empty' || row.kind === 'deleted') return 44;
   const lines = row.kind === 'text' ? row.text.split('\n').length : 1;
-  return 30 + lines * 22;
+  if (row.kind !== 'text' || !looksStructured(row.text)) return 30 + lines * 22;
+
+  const result = formatText(row.text);
+  if (result.jumbo) {
+    // 48px for a single emoji, 36px for two or three, times the 1.15 line box,
+    // plus the bubble's own padding.
+    return result.emojiCount === 1 ? 78 : 62;
+  }
+
+  const extra = Math.max(0, result.blocks.length - 1);
+  // Each extra block is taller than a plain line and carries its own margins,
+  // which the line count alone does not see.
+  return 30 + lines * 22 + extra * 14;
 }
 
 function estimateOf(row: ChatRow): number {

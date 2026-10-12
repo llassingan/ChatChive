@@ -1,0 +1,137 @@
+/*
+  In-bubble typography (backlog E4-6; DESIGN.md §3.1, §3.8, §3.10). Links, code,
+  quote blocks, lists and jumbo emoji, all built from existing tokens: the only
+  new color is `--link`, and it exists because `--accent` fails AA inside a
+  bubble (measured in src/ui/README.md).
+
+  The meta seam (§3.8). `.bubble__content` is a `flow-root` and `.meta` floats
+  right, which is what puts the time at the end of the last text line when there
+  is room. That only works while the body is inline content, so a body of
+  paragraphs stays `display: inline` and its paragraphs do too. The moment the
+  message carries a block (a quote, a fence, a list) the body becomes
+  `display: block` and the meta gives up its float for its own right-aligned
+  line: a float beside a block sibling jumps lines content-dependently, which is
+  the failure that looks fine on one message and wrong on the next.
+*/
+
+.bubble__body {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+.bubble__body--block {
+  display: block;
+}
+
+.bubble__para {
+  display: inline;
+  margin: 0;
+}
+
+/* Inside a block body the paragraphs are real paragraphs again, so a quote or a
+   list sits between them the way the message was written. */
+.bubble__body--block .bubble__para {
+  display: block;
+}
+
+.bubble__body--block .bubble__para + .bubble__para {
+  margin-top: var(--space-2);
+}
+
+/* Emphasis. `*bold*` is `--fw-semibold` (600): the token file has no bold
+   weight, and 600 against a 400 body is unmistakable at this size (§4.6). No
+   literal 700 is written anywhere. */
+.bubble__body strong {
+  font-weight: var(--fw-semibold);
+}
+
+.bubble__body em {
+  font-style: italic;
+}
+
+.bubble__body s {
+  text-decoration: line-through;
+}
+
+/* Inline code and fenced blocks share `--card-inner`, the fill the deleted and
+   empty placeholders already use, so no new surface needs measuring (§4.7). */
+.bubble__code {
+  padding: 1px 4px;
+  border-radius: var(--radius-quote);
+  background: var(--card-inner);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 0.9375em;
+}
+
+.bubble__pre {
+  margin: var(--space-1) 0 var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-quote);
+  background: var(--card-inner);
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  /* A long code line scrolls inside its block rather than widening the bubble. */
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.bubble__pre code {
+  font: inherit;
+}
+
+/* Quote block (DESIGN §3.10): the `--quote-in`/`--quote-out` pair with a 4px
+   leading bar at `--radius-quote` (12px mobile / 6px web). The bar is the
+   message's own text color rather than a sender hue: this viewer has no reply
+   target to name, and inventing one would be a color that means nothing. */
+.bubble__quote {
+  margin: var(--space-1) 0 var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-left: var(--quote-bar-w) solid var(--text-secondary);
+  border-radius: var(--radius-quote);
+  background: var(--quote-in);
+}
+
+.bubble--out .bubble__quote {
+  background: var(--quote-out);
+}
+
+.bubble__list {
+  margin: var(--space-1) 0 var(--space-2);
+  /* Room for the bullet or the ordinal. */
+  padding-left: var(--space-7);
+}
+
+.bubble__list li + li {
+  margin-top: var(--space-1);
+}
+
+/* Links: `--link`, underlined, so color is never the only signal (§4.1, WCAG
+   1.4.1). The token is per theme because `--accent` fails AA inside both bubble
+   colors; the measured pairs are in src/ui/README.md. */
+.bubble__body a,
+.bubble__jumbo a {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+/* Jumbo emoji glyphs (DESIGN §3.1, §3.9): the bubble-side rules (no fill, the
+   time pill) live in MessageRow.css with the rest of the bubble, and the scale
+   here comes from the token file rather than anything invented. The class is
+   `bubble__jumbo--<emojiCount>`, so one emoji and two to three emoji pick
+   different sizes with no `:has()` and no measurement. */
+.bubble__jumbo {
+  display: inline-block;
+  font-family: var(--font-emoji);
+  line-height: 1.15;
+  white-space: pre-wrap;
+}
+
+.bubble__jumbo--1 {
+  font-size: var(--fs-emoji-jumbo-1);
+}
+
+.bubble__jumbo--2,
+.bubble__jumbo--3 {
+  font-size: var(--fs-emoji-jumbo-3);
+}

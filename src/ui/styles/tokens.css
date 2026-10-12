@@ -78,6 +78,12 @@
   --badge-bg: #21c063;
   --community-tile: #3b1f2b;
   --community-glyph: #ff5c8a;
+  /* In-bubble link color (E4-6). --accent is unusable there: #21C063 on
+     --bubble-out #144D37 is 4.09:1, below the 4.5:1 that 16-17px body text
+     needs. This value is DESIGN §3.22's --tick-read, re-measured for this role:
+     4.59:1 on --bubble-out, 7.13:1 on --bubble-in. Links also carry an
+     underline, so color is never the only signal (WCAG 1.4.1). */
+  --link: #53bdeb;
 
   /* Bubble elevation: none in dark mode (DESIGN §1.4). Floating buttons only. */
   --shadow-bubble: none;
@@ -300,6 +306,10 @@
   --danger: #ea0038;
   --danger-on: #ffffff;
   --mention: #027eb5;
+  /* In-bubble link color (E4-6). DESIGN §3.22's light value #027EB5 measures
+     4.07:1 on --bubble-out #D9FDD3, a fail at body size; this is the same hue
+     family darkened to clear it: 5.35:1 on --bubble-out, 5.93:1 on --bubble-in. */
+  --link: #0369a1;
 
   --pill-bg: #ffffff;
   --fab-bg: #ffffff;
@@ -379,6 +389,10 @@
   --danger: #f15c6d;
   --danger-on: #0b141a;
   --mention: #53bdeb;
+  /* In-bubble link color (E4-6). Classic's outgoing bubble #005C4B is lighter
+     than dark's, so it needs a lighter blue than --tick-read: 4.95:1 on
+     --bubble-out, 8.88:1 on --bubble-in. */
+  --link: #8ad6f7;
 
   --pill-bg: #182229;
   --fab-bg: #202c33;

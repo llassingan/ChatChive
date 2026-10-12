@@ -1,13 +1,15 @@
 /**
- * One message row (backlog E4-2, E4-3, E4-4, E4-7).
+ * One message row (backlog E4-2, E4-3, E4-4, E4-7, E4-6).
  *
  * Renders the bubble for text, media, deleted and empty messages, the centered
  * pill for a system notice. The layout flags come from `layout.ts`, so this
  * component never re-derives runs.
  *
  * Message text is a React text node, never HTML: a crafted export containing
- * `<script>` shows the literal characters (PRD S-5, E4-6). Formatting (*bold*,
- * links) arrives with E4-6 and is deliberately not stubbed here.
+ * `<script>` shows the literal characters (PRD S-5), including now that E4-6's
+ * formatting is on, because the tokenizer splits the string and the renderer
+ * emits text nodes. The bubble's aria-label hears the plain-text variant, so a
+ * screen reader never reads an asterisk aloud (DESIGN §5).
  */
 import { memo } from 'react';
 import type {
@@ -17,8 +19,10 @@ import type {
   Message,
   Participant,
 } from '../../types/chat.ts';
+import { isJumboEmoji, toPlainText } from '../formatText.ts';
 import { formatBytes, formatClock } from '../format.ts';
 import { Icon, type IconName } from '../icons/index.ts';
+import { FormattedText } from './FormattedText.tsx';
 import { Tail } from './Tail.tsx';
 import './MessageRow.css';
 
@@ -137,17 +141,23 @@ function MediaBody({ message }: { message: MediaMessage }) {
   );
 }
 
-/** The plain-text body a screen reader should hear, per message kind. */
+/**
+ * The plain-text body a screen reader should hear, per message kind. Text goes
+ * through `toPlainText`, so the label says "bold" rather than "asterisk bold
+ * asterisk" now that E4-6 renders markers as elements (§4.3).
+ */
 function spokenBody(message: Message): string {
   switch (message.kind) {
     case 'text':
-      return message.text;
+      return toPlainText(message.text);
     case 'deleted':
       return message.byMe ? 'You deleted this message' : 'This message was deleted';
     case 'empty':
       return 'Message not included in export';
     case 'media':
-      return [MEDIA_META[message.media.kind].label, message.caption].filter(Boolean).join(', ');
+      return [MEDIA_META[message.media.kind].label, message.caption && toPlainText(message.caption)]
+        .filter(Boolean)
+        .join(', ');
     default:
       return '';
   }
@@ -186,6 +196,16 @@ export const MessageRow = memo(function MessageRow({
   if (firstOfRun) classes.push('bubble--first');
   if (lastOfRun) classes.push('bubble--last');
 
+  // Jumbo emoji drops the bubble fill and grows the glyphs, and does nothing
+  // else: the row keeps its run, its tail and (on mobile, incoming) its avatar,
+  // so a message never groups differently because of what it says (§3.9).
+  // The verdict is read here because the class belongs on the bubble. It uses
+  // `isJumboEmoji`, a codepoint scan with no block splitting, so the row does
+  // not pay for a second tokenization: `FormattedText` keeps the one that
+  // matters behind its own `useMemo` (§2.3, §4.2), and `memo` on both
+  // components bounds each to once per mounted row, never per scroll frame.
+  if (message.kind === 'text' && isJumboEmoji(message.text)) classes.push('bubble--jumbo');
+
   // One label for the whole bubble (DESIGN §5): "<Sender>, <time>: <text>". The
   // children are hidden from assistive tech so the text is not read twice.
   const sender = participant?.displayName ?? 'Unknown';
@@ -215,18 +235,14 @@ export const MessageRow = memo(function MessageRow({
           {showSender && participant ? <SenderHeader participant={participant} /> : null}
 
           {message.kind === 'text' ? (
-            <span className="bubble__text" dir="auto">
-              {message.text}
-            </span>
+            <FormattedText text={message.text} outgoing={outgoing} />
           ) : null}
 
           {message.kind === 'media' ? (
             <>
               <MediaBody message={message} />
               {message.caption ? (
-                <span className="bubble__text" dir="auto">
-                  {message.caption}
-                </span>
+                <FormattedText text={message.caption} outgoing={outgoing} />
               ) : null}
             </>
           ) : null}
