@@ -30,12 +30,10 @@ function watchNetwork(page: Page, appOrigin: string): string[] {
   return offending;
 }
 
-/** Pick a fixture through the real file input and wait for the ready summary. */
+/** Pick a fixture through the real file input and wait for the chat view. */
 async function importFile(page: Page, path: string): Promise<void> {
   await page.locator('input[type="file"]').setInputFiles(path);
-  await expect(
-    page.getByRole('heading', { name: 'The message view is not here yet' }),
-  ).toBeVisible();
+  await expect(page.locator('.chat')).toBeVisible();
 }
 
 test('makes zero cross-origin requests after the app shell loads', async ({ page, baseURL }) => {
@@ -63,8 +61,9 @@ test('imports a .zip export with no network request after load', async ({ page, 
   await importFile(page, ZIP_FIXTURE);
 
   // The zip's inner text file names the contact, which becomes the chat title.
-  await expect(page.getByRole('heading', { name: 'Nadia Rush' })).toBeVisible();
-  await expect(page.getByText('Personal', { exact: true })).toBeVisible();
+  await expect(page.getByText('Nadia Rush', { exact: true })).toBeVisible();
+  // Importing and rendering the chat must still make no request (S-2).
+  await expect(page.getByText('7 messages')).toBeVisible();
 
   expect(offending, `Unexpected network requests: ${offending.join(', ')}`).toEqual([]);
 });
@@ -80,8 +79,7 @@ test('imports a .txt export with no network request after load', async ({ page, 
 
   // A .txt export has no filename to name the chat, so the title falls back to
   // the first sender in the file.
-  await expect(page.getByRole('heading', { name: 'Elin Sato' })).toBeVisible();
-  await expect(page.getByText('Personal', { exact: true })).toBeVisible();
+  await expect(page.getByText('Elin Sato', { exact: true })).toBeVisible();
 
   expect(offending, `Unexpected network requests: ${offending.join(', ')}`).toEqual([]);
 });

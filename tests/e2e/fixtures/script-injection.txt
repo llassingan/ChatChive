@@ -1,0 +1,3 @@
+13/07/2026, 14.20 - Elin Sato: <script>window.__pwned = true</script>
+13/07/2026, 14.21 - Marcus Vane: <img src=x onerror="window.__pwned = true">
+13/07/2026, 14.22 - Elin Sato: Normal message after the crafted ones

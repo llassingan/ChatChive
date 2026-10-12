@@ -63,12 +63,12 @@ test('asks for the date order when the export is ambiguous, then opens the chat'
   await expect(page.getByRole('heading', { name: 'Which date is this?' })).toBeVisible();
   await expect(page.getByText(/or /)).toBeVisible();
 
-  // Choosing an order re-parses the same file; the group fixture has 4 senders.
+  // Choosing an order re-parses the same file and opens the chat. The group has
+  // no filename signal, so "Which one is you?" arrives (E3-4).
   await page.getByRole('button', { name: 'Day first' }).click();
-  await expect(
-    page.getByRole('heading', { name: 'The message view is not here yet' }),
-  ).toBeVisible();
-  await expect(page.getByText('Group', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Which one is you?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Nobody' }).click();
+  await expect(page.locator('.chat')).toBeVisible();
 });
 
 test('cancel from the date prompt returns to the drop zone', async ({ page }) => {
@@ -80,20 +80,18 @@ test('cancel from the date prompt returns to the drop zone', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'ChatChive' })).toBeVisible();
 });
 
-test('the ready summary reports real values and an honest note about the missing view', async ({
-  page,
-}) => {
+test('the chat opens with the real title, count and date range', async ({ page }) => {
   await page.goto('/');
   await chooseFile(page, ZIP_FIXTURE);
 
-  await expect(page.getByRole('heading', { name: 'Nadia Rush' })).toBeVisible();
-  await expect(page.getByText('Personal', { exact: true })).toBeVisible();
+  await expect(page.getByText('Nadia Rush', { exact: true })).toBeVisible();
   // 7 messages: the caption line is folded into the image message, not counted
   // as its own (F-PAR-4).
-  await expect(page.getByText('7', { exact: true })).toBeVisible();
+  await expect(page.getByText('7 messages')).toBeVisible();
+  await expect(page.getByText(/Feb 6, 2026 to Jul 13, 2026/)).toBeVisible();
 
-  // "Close chat" is a real control that frees the session and returns home.
-  await page.getByRole('button', { name: 'Close chat' }).click();
+  // The header back button is a real control that frees the session and returns home.
+  await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.getByRole('heading', { name: 'ChatChive' })).toBeVisible();
 });
 
@@ -103,7 +101,7 @@ test.describe('responsive: no horizontal overflow', () => {
     { width: 390, height: 844 },
     { width: 1440, height: 900 },
   ]) {
-    test(`landing and ready fit at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    test(`landing and chat fit at ${viewport.width}x${viewport.height}`, async ({ page }) => {
       await page.setViewportSize(viewport);
       await page.goto('/');
 
@@ -115,7 +113,7 @@ test.describe('responsive: no horizontal overflow', () => {
       expect(await overflow()).toBeLessThanOrEqual(0);
 
       await chooseFile(page, ZIP_FIXTURE);
-      await expect(page.getByRole('heading', { name: 'Nadia Rush' })).toBeVisible();
+      await expect(page.locator('.chat')).toBeVisible();
       expect(await overflow()).toBeLessThanOrEqual(0);
     });
   }
@@ -153,7 +151,7 @@ test.describe('every shipped theme renders the flow', () => {
       await page.goto('/');
       await chooseFile(page, ZIP_FIXTURE);
 
-      await expect(page.getByRole('heading', { name: 'Nadia Rush' })).toBeVisible();
+      await expect(page.getByText('7 messages')).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
