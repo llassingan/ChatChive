@@ -9,7 +9,7 @@ function headersOf(text: string): HeaderLine[] {
     .filter((p): p is HeaderLine => p.type === 'header');
 }
 
-describe('parseLine — Android', () => {
+describe('parseLine: Android', () => {
   it('parses a 24h header with sender and body', () => {
     const line = parseLine('6/2/26, 21:36 - Mira Vale: Pagi kak');
     expect(line).toMatchObject({
@@ -63,12 +63,12 @@ describe('parseLine — Android', () => {
   });
 });
 
-describe('parseLine — iOS', () => {
+describe('parseLine: iOS', () => {
   it('parses a bracketed header with seconds and strips invisible chars', () => {
     const line = parseLine('[6/28/26, 7:06:01\u202FAM] Theo Marsh: \u200E<attached: file.jpg>');
     if (line.type !== 'header') throw new Error('expected header');
     expect(line.platform).toBe('ios');
-    expect(line.timestamp.second_).toBe(1);
+    expect(line.timestamp.secondOfMinute).toBe(1);
     expect(line.timestamp.meridiem).toBe('am');
     expect(line.sender).toBe('Theo Marsh');
     expect(line.body).toBe('<attached: file.jpg>');
@@ -79,12 +79,12 @@ describe('parseLine — iOS', () => {
     const line = parseLine('[02/06/26, 21.36.05] Pesan dienkripsi');
     if (line.type !== 'header') throw new Error('expected header');
     expect(line.timestamp.clockStyle).toBe('24h');
-    expect(line.timestamp.second_).toBe(5);
+    expect(line.timestamp.secondOfMinute).toBe(5);
     expect(line.sender).toBeNull();
   });
 });
 
-describe('parseLine — continuations and malformed lines', () => {
+describe('parseLine: continuations and malformed lines', () => {
   it('reports a non-header line as a continuation', () => {
     const line = parseLine('boleh tanya ini kenapa ya');
     expect(line.type).toBe('continuation');
@@ -107,7 +107,7 @@ describe('parseLine — continuations and malformed lines', () => {
 
 describe('toEpochMs', () => {
   it('maps 12h AM/PM to 24h hours', () => {
-    const base = { first: 6, second: 28, year: 2026, minute: 0, second_: 0 } as const;
+    const base = { first: 6, second: 28, year: 2026, minute: 0, secondOfMinute: 0 } as const;
     const midnight = toEpochMs({ ...base, hour: 12, clockStyle: '12h', meridiem: 'am' }, 'MDY');
     const noon = toEpochMs({ ...base, hour: 12, clockStyle: '12h', meridiem: 'pm' }, 'MDY');
     const onePm = toEpochMs({ ...base, hour: 1, clockStyle: '12h', meridiem: 'pm' }, 'MDY');
@@ -123,7 +123,7 @@ describe('toEpochMs', () => {
       year: 2026,
       hour: 15,
       minute: 33,
-      second_: 0,
+      secondOfMinute: 0,
       clockStyle: '24h',
     } as const;
     const mdy = new Date(toEpochMs(ts, 'MDY'));

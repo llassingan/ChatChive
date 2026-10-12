@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { detectDateOrder } from './dateOrder.ts';
 import { fixtures } from './fixtures/index.ts';
 
-describe('detectDateOrder — unambiguous data', () => {
+describe('detectDateOrder: unambiguous data', () => {
   it('detects MDY when a second part exceeds 12', () => {
     const result = detectDateOrder('6/27/26, 22:44 - A: hi');
     expect(result).toEqual({ order: 'MDY' });
@@ -19,7 +19,7 @@ describe('detectDateOrder — unambiguous data', () => {
   });
 });
 
-describe('detectDateOrder — fixtures', () => {
+describe('detectDateOrder: fixtures', () => {
   it.each([
     ['android-en-md-24h', 'MDY'],
     ['android-en-md-12h', 'MDY'],
@@ -33,7 +33,7 @@ describe('detectDateOrder — fixtures', () => {
   });
 });
 
-describe('detectDateOrder — ambiguous data', () => {
+describe('detectDateOrder: ambiguous data', () => {
   it('returns a user choice with distinct previews for the group fixture', () => {
     const result = detectDateOrder(fixtures['group-android-en']);
     if (!('needsUserChoice' in result)) {

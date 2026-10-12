@@ -4,7 +4,7 @@
  * A WhatsApp export is a flat list of lines. Some lines start with a timestamp
  * header; the rest continue the previous message (multi-line text and media
  * captions). This module recognizes headers and extracts their raw parts
- * WITHOUT committing to a date order — MDY vs DMY is decided separately
+ * WITHOUT committing to a date order: MDY vs DMY is decided separately
  * (E2-3) across the whole file, then applied here via `toEpochMs`.
  *
  * Two header shapes are supported:
@@ -32,7 +32,7 @@ export interface RawTimestamp {
   year: number;
   hour: number;
   minute: number;
-  second_: number;
+  secondOfMinute: number;
   clockStyle: ClockStyle;
   /** Present only for 12h clocks; drives the hour conversion in `toEpochMs`. */
   meridiem?: 'am' | 'pm';
@@ -89,7 +89,7 @@ function buildTimestamp(match: RegExpMatchArray): RawTimestamp {
     year: normalizeYear(year),
     hour: Number(hour),
     minute: Number(minute),
-    second_: seconds !== undefined ? Number(seconds) : 0,
+    secondOfMinute: seconds !== undefined ? Number(seconds) : 0,
     clockStyle: hasMeridiem ? '12h' : '24h',
   };
   if (hasMeridiem) {
@@ -150,8 +150,8 @@ export function parseLine(rawLine: string): ParsedLine {
 
 /**
  * Resolve a raw timestamp to epoch milliseconds once the date order is known.
- * Exports carry no timezone, so the parts are read as the viewer's local time
- * — the same convention WhatsApp uses when it writes the export. A 12h hour of
+ * Exports carry no timezone, so the parts are read as the viewer's local time,
+ * the same convention WhatsApp uses when it writes the export. A 12h hour of
  * 12 maps to 0 for AM and stays 12 for PM.
  */
 export function toEpochMs(ts: RawTimestamp, dateOrder: 'DMY' | 'MDY'): number {
@@ -165,5 +165,5 @@ export function toEpochMs(ts: RawTimestamp, dateOrder: 'DMY' | 'MDY'): number {
     hour += 12;
   }
 
-  return new Date(ts.year, month - 1, day, hour, ts.minute, ts.second_, 0).getTime();
+  return new Date(ts.year, month - 1, day, hour, ts.minute, ts.secondOfMinute, 0).getTime();
 }
