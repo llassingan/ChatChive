@@ -1,0 +1,34 @@
+13/07/2026, 14.20 - Elin Sato: Plain message with no markers at all
+13/07/2026, 14.21 - Elin Sato: This one is *bold* in the middle of a sentence
+13/07/2026, 14.22 - Elin Sato: This one is _italic_ in the middle of a sentence
+13/07/2026, 14.23 - Elin Sato: This one is ~struck~ in the middle of a sentence
+13/07/2026, 14.24 - Elin Sato: This one is `inline code` in the middle of a sentence
+13/07/2026, 14.25 - Elin Sato: ```
+const greet = (name) => name;
+console.log(greet('world'));
+```
+13/07/2026, 14.26 - Elin Sato: > quoted line one
+> quoted line two
+13/07/2026, 14.27 - Elin Sato: - first bullet
+- second bullet
+- third bullet
+13/07/2026, 14.28 - Elin Sato: 1. first item
+2. second item
+3. third item
+13/07/2026, 14.31 - Elin Sato: Read the notes at https://example.com/notes?ref=chat for the details
+13/07/2026, 14.32 - Elin Sato: Mail the summary to elin.sato@example.co.id before Friday
+13/07/2026, 14.33 - Elin Sato: Call the office on +62 812-3456-789 if the link is down
+13/07/2026, 14.34 - Elin Sato: The handbook lives at www.example.org/handbook and covers everything
+13/07/2026, 14.35 - Elin Sato: The old site was https://example.com. It moved last year
+13/07/2026, 14.41 - Elin Sato: Here is the long one. The migration has been running since the weekend and the numbers are finally stable, so this message carries a lot of inline text before it reaches the interesting parts. Read the full report at https://example.com/reports/migration-2026 for the numbers, then run the script below to reproduce what we saw.
+```
+npm run migrate -- --dry-run
+```
+- check the row counts
+- check the error log
+- tell the team
+13/07/2026, 14.42 - Elin Sato: 👍
+13/07/2026, 14.43 - Elin Sato: 🎉 🎊 🔥
+13/07/2026, 14.44 - Elin Sato: 🎉 🎊 🔥 🚀
+13/07/2026, 14.45 - Elin Sato: <script>window.__pwned = true</script>
+13/07/2026, 14.46 - Marcus Vane: A *bold* reply from the other side of the chat
