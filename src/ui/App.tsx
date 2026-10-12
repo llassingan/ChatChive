@@ -2,7 +2,7 @@
  * App shell and view switch (E3, E4). One screen at a time: the landing drop
  * zone, the processing bar, the ambiguous-date prompt, the chat, or an error.
  */
-import { ChatView } from './chat/ChatView.tsx';
+import { ChatShell } from './shell/ChatShell.tsx';
 import { DateOrderPrompt } from './components/DateOrderPrompt.tsx';
 import { ErrorView } from './components/ErrorView.tsx';
 import { Landing } from './components/Landing.tsx';
@@ -36,7 +36,7 @@ export function App() {
         />
       ) : null}
 
-      {state.status === 'chat' ? <ChatView chat={state.chat} onClose={flow.cancel} /> : null}
+      {state.status === 'chat' ? <ChatShell chat={state.chat} onClose={flow.cancel} /> : null}
 
       {state.status === 'error' ? <ErrorView error={state.error} onBack={flow.cancel} /> : null}
     </div>

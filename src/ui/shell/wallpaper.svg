@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none" aria-hidden="true">
+  <!--
+    ChatChive wallpaper tile (DESIGN §6, R-23): original line art drawn from this
+    project's own subject matter, not a recreation or trace of WhatsApp's motifs.
+
+    One stroke color, as the asset checklist asks. The stroke is white and the
+    layer's alpha carries the theme (see ChatShell.css): white at 4% is exactly
+    --wallpaper-stroke in dark, 3% exactly in classic, and light inverts the tile
+    so its ink is the dark rgba(11,20,26,0.04) the token names there.
+
+    Motifs are the shapes this app already draws elsewhere: a bubble run with a
+    tail, speech dots, a file tile with a folded corner, a paperclip, a date
+    pill, an outgoing bubble, a voice note with its waveform, and read ticks.
+    Drawn on a 400x400 grid so the tile repeats at a readable density.
+  -->
+  <g stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Incoming bubble with its tail -->
+    <path d="M38 40h96a10 10 0 0 1 10 10v44a10 10 0 0 1-10 10H70l-18 14v-14h-14a10 10 0 0 1-10-10V50a10 10 0 0 1 10-10Z" />
+    <!-- Speech dots inside it -->
+    <circle cx="62" cy="72" r="3" />
+    <circle cx="78" cy="72" r="3" />
+    <circle cx="94" cy="72" r="3" />
+    <!-- Outgoing bubble, tail mirrored -->
+    <path d="M366 40H270a10 10 0 0 0-10 10v44a10 10 0 0 0 10 10h64l18 14v-14h14a10 10 0 0 0 10-10V50a10 10 0 0 0-10-10Z" />
+
+    <!-- File tile with a folded corner -->
+    <path d="M150 128h56l22 22v74a8 8 0 0 1-8 8h-70a8 8 0 0 1-8-8v-88a8 8 0 0 1 8-8Z" />
+    <path d="M206 128v22h22" />
+
+    <!-- Paperclip -->
+    <path d="M300 132a22 22 0 0 1 31 0l22 22a22 22 0 0 1-31 31l-40-40a13 13 0 0 1 18-18l39 39" />
+
+    <!-- Read ticks -->
+    <path d="M128 176l8 8 14-16M152 176l8 8 14-16" />
+
+    <!-- Date pill -->
+    <rect x="30" y="252" width="112" height="30" rx="15" />
+    <path d="M56 274v-12l-6 4M80 274c5 0 8-3 8-7s-3-7-8-7" />
+
+    <!-- Outgoing bubble, filled corner tail -->
+    <path d="M258 232h84a10 10 0 0 0 10-10v-8a10 10 0 0 0-10-10h-84a10 10 0 0 0-10 10v8a10 10 0 0 0 10 10Z" />
+    <path d="M348 232l14 12v-12" />
+
+    <!-- Lock: the export's own encryption notice (DESIGN §3.6) -->
+    <path d="M208 292h16v14h-16zM211 292v-4a5 5 0 0 1 10 0v4" />
+
+    <!-- Voice note: mic in a circle, then its waveform -->
+    <circle cx="86" cy="344" r="34" />
+    <path d="M86 330a7 7 0 0 0-7 7v9a7 7 0 0 0 14 0v-9a7 7 0 0 0-7-7ZM73 344a13 13 0 0 0 26 0" />
+    <path d="M150 336v16M164 330v28M178 338v12M192 332v24M206 340v8" />
+
+    <!-- Second bubble, smaller, off the grid -->
+    <path d="M262 328h88a9 9 0 0 1 9 9v22a9 9 0 0 1-9 9h-64l-16 12v-12h-8a9 9 0 0 1-9-9v-22a9 9 0 0 1 9-9Z" />
+  </g>
+</svg>

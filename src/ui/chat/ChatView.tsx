@@ -25,9 +25,26 @@ export interface ChatViewProps {
   chat: Chat;
   /** Back to the chat list / landing page (F-RES-1). */
   onClose: () => void;
+  /**
+   * True when the shell renders this view as the right-hand pane of the
+   * two-column frame (E6-2). The pane drops the `100dvh` height because the
+   * shell owns it.
+   *
+   * The back chevron deliberately stays at every width (Amendment A1, §3.5
+   * withdrawn). It shares the one `onClose` with the panel row and "Close chat",
+   * and below 768px, where the panel is `display: none`, it is the only back
+   * affordance left. Hiding it at web widths would also drop it from the
+   * accessibility tree, turning `getByRole('button', { name: 'Back' })` into
+   * zero matches at Playwright's 1280x720 default.
+   *
+   * Required rather than optional: the shell is the only render site, so a
+   * second one has to state its intent instead of inheriting a default no
+   * reachable path uses.
+   */
+  pane: boolean;
 }
 
-export function ChatView({ chat, onClose }: ChatViewProps) {
+export function ChatView({ chat, onClose, pane }: ChatViewProps) {
   // The chosen "me", or null for "Nobody". Seeded from the parser's guess.
   const [meId, setMeId] = useState<string | null>(chat.guessedMeId);
   const [answered, setAnswered] = useState(!needsMeChoice(chat));
@@ -65,7 +82,7 @@ export function ChatView({ chat, onClose }: ChatViewProps) {
   }
 
   return (
-    <div className="chat">
+    <div className={pane ? 'chat chat--pane' : 'chat'}>
       <header className="chat__header">
         <button type="button" className="icon-button" onClick={onClose}>
           <Icon name="chevron-left" size={24} title="Back" />

@@ -11,7 +11,17 @@ Consumes the shared data model from `src/types`. Owned by the frontend track.
 - `components/`: one file per import-flow screen plus the shared dialog and button styles.
 - `chat/`: the message view (E4): the row layout pass, the virtualized list, the bubble
   row, the "Which one is you?" picker and the bubble tails.
-- `import/`: the import state machine and the error copy.
+- `shell/`: the two-column frame (E6-2): the chat list panel, the pane frame and the
+  wallpaper tile. Below 768px the panel is `display: none` and the frame is a single
+  column, so the mobile and desktop shells differ by CSS alone.
+- `shell/ChatPanel.tsx` derives its preview from the newest message the way the bubble words
+  it, through `formatText.ts`'s `toPlainText` (Amendment A3), so the panel never prints a
+  formatting marker that the bubble renders as an element.
+- The pane keeps its header back chevron at every width (Amendment A1, a documented deviation
+  from `DESIGN.md` §2.2): below 768px it is the only back affordance, since the panel is
+  hidden there.
+- `import/`: the import state machine, the error copy, and `useHistoryBack` (the
+  browser Back button without a router, E6-1).
 - `styles/tokens.css`: design tokens (E1-2). The single source for color, type, spacing,
   radius and size. Imported by `global.css`.
 - `styles/global.css`: resets plus token wiring. Keep app styling out of here; it lives
@@ -146,6 +156,26 @@ background is beige and the brand green scores only 2.51:1 on it:
 - `--accent-strong` is `#008069` in light (WhatsApp's own light-mode button green; white on it
   is 4.89:1).
 
+Sprint 4 (E4-6 in-bubble links, E6-2 shell). `--accent` is unusable as an in-bubble link
+color in all three themes (`#21C063` on `--bubble-out` is 4.09:1, `#1DAA61` on `#D9FDD3` is
+2.72:1, `#00A884` on `#005C4B` is 2.63:1), so links use a per-theme `--link` and carry an
+underline, which keeps color from being the only signal (WCAG 1.4.1):
+
+| Theme   | Pair                                      | Ratio | Normal (4.5:1) |
+| ------- | ----------------------------------------- | ----- | -------------- |
+| Dark    | `--link` `#53BDEB` on `--bubble-out`      | 4.59  | PASS           |
+| Dark    | `--link` `#53BDEB` on `--bubble-in`       | 7.13  | PASS           |
+| Light   | `--link` `#0369A1` on `--bubble-out`      | 5.35  | PASS           |
+| Light   | `--link` `#0369A1` on `--bubble-in`       | 5.93  | PASS           |
+| Classic | `--link` `#8AD6F7` on `--bubble-out`      | 4.95  | PASS           |
+| Classic | `--link` `#8AD6F7` on `--bubble-in`       | 8.88  | PASS           |
+| Dark    | `--text-primary` on `--bg-panel`          | 17.96 | PASS           |
+| Dark    | `--text-secondary` (0.65) on `--bg-panel` | 8.08  | PASS           |
+| Light   | `--text-primary` on `--bg-panel`          | 17.46 | PASS           |
+| Light   | `--text-secondary` `#54646D` on panel     | 6.14  | PASS           |
+| Classic | `--text-primary` on `--bg-panel`          | 14.82 | PASS           |
+| Classic | `--text-secondary` `#C0CED6` on panel     | 10.84 | PASS           |
+
 Deliberate deviations from the raw `DESIGN.md` values, to clear AA:
 
 - Dark secondary uses opacity `0.65` (not `0.60`); `DESIGN.md` §5 explicitly permits this.
@@ -163,11 +193,26 @@ Deliberate deviations from the raw `DESIGN.md` values, to clear AA:
   3:1. `--divider` is still used where the line only groups content (the privacy note, the
   footer separator in the chat view).
 
+Sprint 4 additions to the deviation list:
+
+- Light link color is `#0369A1`, not `DESIGN.md` §3.22's `#027EB5`, which measures 4.07:1 on
+  `--bubble-out` `#D9FDD3` and fails at 16-17px body size. Same hue family, darkened.
+- The shell ships two columns at 768px and up, with no 1024 tier and no icon rail, so the
+  desktop frame is `.chat-shell`, `.chat-panel` and `.chat-shell__pane`. `--bg-rail` stays in
+  the token file and is permanently unused; that is intended, not an oversight.
+- The panel row's title and preview are text roles on `--bg-panel`, measured above, rather
+  than new surfaces.
+- The pane header keeps its back chevron at web widths (Amendment A1, §3.11 item 7), where
+  `DESIGN.md` §2.2's web pane header lists none. The reason is in `chat/README.md`.
+- The shell draws no icon rail, no filter-chip row, no notification banner and no "Get the
+  desktop app" footer (`DESIGN.md` §3.11), and ships one boundary at 768px rather than
+  §2.3's 768-1023 and >=1024 tiers. The panel has one row and no search field: a filter over
+  one row cannot filter anything (R-26). None of these are omissions to fill in later.
+
 Known limitations carried forward (not blocking E1-2/E1-3):
 
 - `--text-tertiary` is the composer placeholder only ("Type a message"), ~3.8:1. It is
   low-emphasis non-essential text and mirrors WhatsApp. The composer story (E6-1) should pair
   it with a visible label, or bump it if used for anything load-bearing.
-- `--accent` as a link color inside `--bubble-out` is ~4.1:1 (fails normal text). The
-  message-formatting story (E4-6) must handle in-bubble link contrast (e.g. underline + a
-  darker link token), not E1-2.
+- `--accent` as a link color inside `--bubble-out` was ~4.1:1 (a fail). Resolved in Sprint 4
+  by the per-theme `--link` token with an underline, measured in the table above.

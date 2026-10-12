@@ -24,14 +24,16 @@ test('a personal chat opens at the newest message with real values', async ({ pa
   await openZip(page);
 
   // Header: the contact from the filename, and the subtitle.
-  await expect(page.getByText('Nadia Rush', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.chat__header').getByText('Nadia Rush', { exact: true }),
+  ).toBeVisible();
 
   // No picker for a personal chat: the filename already named the other person,
   // so the guess is applied without interrupting (E3-4).
   await expect(page.getByRole('dialog')).toBeHidden();
 
   // The newest message is in view on arrival (F-VIEW-13).
-  await expect(page.getByText('Got it')).toBeVisible();
+  await expect(page.locator('.chat-list').getByText('Got it')).toBeVisible();
 
   // The read-only footer reports real counts (F-RES-5).
   await expect(page.getByText('7 messages')).toBeVisible();
@@ -250,6 +252,7 @@ test('every message bubble carries a screen-reader label (DESIGN §5)', async ({
 
 test.describe('responsive: the chat fits with no horizontal overflow', () => {
   for (const viewport of [
+    { width: 320, height: 640 },
     { width: 360, height: 640 },
     { width: 390, height: 844 },
     { width: 768, height: 900 },

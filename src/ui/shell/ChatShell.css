@@ -1,0 +1,80 @@
+/*
+  Two-column shell (E6-2; DESIGN §2.2, §2.3). The frame is one box in both
+  shells: the panel column and the pane column. Below 768px the panel is
+  `display: none` and the box is a single column, so mobile and desktop differ
+  by CSS alone (§2.4).
+
+  Breakpoint: one boundary, 768px, matching the single layout boundary the rest
+  of the codebase uses (`tokens.css`, `MessageRow.css`, `MessageList.css`,
+  `components/Landing.css`). DESIGN §2.3's 768-1023 and >=1024 tiers converge
+  here because the icon rail is deliberately not shipped (§3.1, §3.6).
+
+  Wallpaper: the only decorative surface in the sprint (DESIGN §6). The tile is
+  white line art; its alpha carries the theme, since CSS cannot pull the alpha
+  channel out of a `var()` color. The alphas are `--wallpaper-stroke`'s own
+  (dark 0.04, light 0.04, classic 0.03), and light inverts the ink so the
+  doodle is dark on the light surface, exactly as the token says.
+*/
+
+.chat-shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-chat);
+}
+
+/* The pane is the positioning context for the wallpaper and the flex child
+   that takes whatever the panel column leaves. `min-width: 0` lets the
+   message list shrink instead of overflowing at narrow desktop widths. */
+.chat-shell__pane {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.chat-shell__wallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  /* Decorative and never interactive: the message list and the header menu sit
+     above it and take every pointer event. */
+  pointer-events: none;
+  background-image: url('./wallpaper.svg');
+  background-repeat: repeat;
+  background-size: 400px 400px;
+  opacity: 0.04;
+}
+
+/* Ink for the light surface: the tile is white, so invert it to the dark end. */
+[data-theme='light'] .chat-shell__wallpaper {
+  filter: invert(1);
+}
+
+[data-theme='classic'] .chat-shell__wallpaper {
+  opacity: 0.03;
+}
+
+/* The panel is web-only. Below 768px it stays in the DOM but is `display: none`
+   (§2.4: the difference between the two shells is CSS and nothing else), so its
+   row text must never duplicate a string the e2e suite matches by text: a hidden
+   duplicate still counts for `getByText(..., { exact: true })` (§4.8). */
+.chat-panel {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    /* DESIGN §1.4: web chat list width is 30% of the window, min 340px, max
+       470px. DESIGN §2.3 gives the 768-1023 band a flat 320px, but the tiers
+       converge into one layout here (§3.6), so the §1.4 rule governs and the
+       clamp floors at 340px: at a 768px viewport the panel is 340px and the
+       pane gets the remaining 428px, with no second boundary to jump at. */
+    width: clamp(340px, 30%, 470px);
+    min-width: 0;
+    background: var(--bg-panel);
+    border-right: 1px solid var(--divider);
+  }
+}

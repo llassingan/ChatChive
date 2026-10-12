@@ -76,3 +76,22 @@ reopens it.
 
 `DESIGN.md` shows a forward button beside media and large link previews. Those
 are E5/E7 and are not drawn here, so no dead control ships (R-26).
+
+## The shell (E6-2)
+
+`ChatView` renders the pane of the two-column frame owned by `src/ui/shell/`. It takes a
+`pane` prop (required, since the shell is the only render site): the pane is not the whole
+viewport any more, so it fills the shell column instead of `100dvh` and goes transparent so
+the shell's wallpaper shows through the message area. The header and the footer keep their own
+surfaces and cover it in their bands, as `DESIGN.md` §2.2 draws them. Below 768px the shell is
+a single column and the pane is the whole screen again.
+
+The header back chevron stays visible at every width (Amendment A1; the plan's §3.5 "web hides
+it" is withdrawn). It shares the single `onClose` with the panel row and "Close chat", and
+below 768px it is the only back affordance left, since the panel is `display: none` there.
+Hiding it at web widths would also drop it from the accessibility tree, turning
+`getByRole('button', { name: 'Back' })` into zero matches at Playwright's 1280x720 default.
+
+The shell also owns the history entry the browser Back button consumes
+(`import/useHistoryBack.ts`), so the header Back button, the panel row and "Close chat" all
+run one close path.

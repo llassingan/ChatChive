@@ -7,8 +7,27 @@
 .chat {
   display: flex;
   flex-direction: column;
+  /* The standalone height: what the view used when it was the whole screen, and
+     what `pane={false}` still means. The shell is currently the only render
+     site and always passes `pane`, so `.chat--pane` below is what ships; this
+     line is the prop's `false` branch, not dead weight. */
   height: 100dvh;
   background: var(--bg-chat);
+}
+
+/* As the right-hand column of the two-column shell (E6-2) the view is no longer
+   the whole viewport: the shell owns the height, and this box fills the pane and
+   goes transparent so the shell's wallpaper layer shows through the message
+   area. The header and the footer keep their own surfaces and cover it in their
+   bands, exactly as DESIGN §2.2 draws them. */
+.chat--pane {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  background: transparent;
 }
 
 .chat__header {
@@ -91,7 +110,13 @@
 }
 
 .chat__menu-item {
-  display: block;
+  /* 44px touch floor (R-32, F-RES-4, E6-1): the 10px padding plus a 22px line
+     came to 42px. Flex centres the label in the taller box instead of leaving
+     it high. DESIGN §3.18's 40px rows are the message hover menu, a different
+     menu from this header dropdown. */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   width: 100%;
   padding: var(--space-5) var(--space-6);
   border: none;

@@ -61,7 +61,9 @@ test('imports a .zip export with no network request after load', async ({ page, 
   await importFile(page, ZIP_FIXTURE);
 
   // The zip's inner text file names the contact, which becomes the chat title.
-  await expect(page.getByText('Nadia Rush', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.chat__header').getByText('Nadia Rush', { exact: true }),
+  ).toBeVisible();
   // Importing and rendering the chat must still make no request (S-2).
   await expect(page.getByText('7 messages')).toBeVisible();
 
@@ -79,7 +81,7 @@ test('imports a .txt export with no network request after load', async ({ page, 
 
   // A .txt export has no filename to name the chat, so the title falls back to
   // the first sender in the file.
-  await expect(page.getByText('Elin Sato', { exact: true })).toBeVisible();
+  await expect(page.locator('.chat__header').getByText('Elin Sato', { exact: true })).toBeVisible();
 
   expect(offending, `Unexpected network requests: ${offending.join(', ')}`).toEqual([]);
 });

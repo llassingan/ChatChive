@@ -84,7 +84,9 @@ test('the chat opens with the real title, count and date range', async ({ page }
   await page.goto('/');
   await chooseFile(page, ZIP_FIXTURE);
 
-  await expect(page.getByText('Nadia Rush', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('.chat__header').getByText('Nadia Rush', { exact: true }),
+  ).toBeVisible();
   // 7 messages: the caption line is folded into the image message, not counted
   // as its own (F-PAR-4).
   await expect(page.getByText('7 messages')).toBeVisible();

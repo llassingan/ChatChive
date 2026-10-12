@@ -1,0 +1,65 @@
+/*
+  The chat list panel (E6-2; DESIGN §2.2 chat list column, §3.20 row states).
+  Column metrics (width, surface, right border) live in ChatShell.css with the
+  frame; this file is the row.
+
+  One row, so "selected" is its resting state and the hover/active states are the
+  row's feedback (R-27). The row is a real button, so hover, focus and active are
+  the browser's own where they can be, and the visible focus ring comes from the
+  global `:focus-visible` rule (R-32).
+*/
+
+.chat-panel__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-5) var(--space-6);
+  border: none;
+  background: var(--bg-list-active);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-panel__row:hover {
+  background: var(--bg-list-hover);
+}
+
+.chat-panel__row:active {
+  background: var(--bg-input);
+}
+
+.chat-panel__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chat-panel__title {
+  font-size: var(--fs-sender);
+  font-weight: var(--fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-panel__preview {
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-panel__time {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+}
+
+/* Below 768px the whole panel is `display: none` (ChatShell.css), so the row
+   needs no mobile metrics of its own. */
