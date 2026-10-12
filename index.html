@@ -7,11 +7,11 @@
       Privacy lock-down (PRD §8 S-1,S-2,S-3,S-5; backlog E1-3). Finalized.
       Required set (S-2): default-src / connect-src / img-src / media-src /
       script-src. The rest is hardening:
-        style-src 'self' 'unsafe-inline' — Vite injects component styles as
-          inline <style>; no remote stylesheet is ever loaded.
-        font-src 'self'                  — system fonts only, no Google Fonts (S-2).
-        worker-src 'self' blob:          — the parse/unzip worker (E2-6).
-        object-src/base-uri/form-action  — lock down plugins, base tag, form posts.
+        style-src 'self' 'unsafe-inline' (Vite injects component styles as
+          inline <style>; no remote stylesheet is ever loaded).
+        font-src 'self' (system fonts only, no Google Fonts; S-2).
+        worker-src 'self' blob: (the parse/unzip worker; E2-6).
+        object-src/base-uri/form-action (lock down plugins, base tag, form posts).
       frame-ancestors 'none' is deliberately NOT in this meta tag: browsers ignore
       frame-ancestors delivered via <meta> and log an error for it, so it belongs
       only in the response-header mirror the static host adds (plus X-Frame-Options).

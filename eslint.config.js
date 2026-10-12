@@ -6,7 +6,12 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', '.playwright', 'playwright-report'] },
+  {
+    // `.trash` is the gitignored scratch area (project rule: unwanted files move
+    // there instead of being deleted). Linting it reported errors from throwaway
+    // probes that never ship, so it is ignored alongside the build output.
+    ignores: ['dist', 'coverage', 'node_modules', '.playwright', 'playwright-report', '.trash'],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

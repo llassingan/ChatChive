@@ -1,7 +1,7 @@
 # ChatChive
 
 A static web app that opens a WhatsApp chat export (`.zip` or `.txt`) and shows it the way
-WhatsApp does — bubbles, timestamps, date separators, images, voice notes and stickers — on
+WhatsApp does: bubbles, timestamps, date separators, images, voice notes and stickers, on
 phone and desktop.
 
 **Your chat never leaves your device.** The file is unzipped, parsed and rendered entirely in
@@ -30,10 +30,10 @@ npm run lint       # ESLint
 
 Client-side only. Two tracks meet at the shared data model in `src/types/`:
 
-- `src/parser/` — reads the export, parses the text, classifies messages, runs in a Web Worker.
-- `src/ui/` — the React view layer, styled from the design tokens in `DESIGN.md`.
+- `src/parser/`: reads the export, parses the text, classifies messages, runs in a Web Worker.
+- `src/ui/`: the React view layer, styled from the design tokens in `DESIGN.md`.
 
 ## License
 
-MIT — see `LICENSE`. Forks must rename (the ChatChive name and logo are not covered by the code
+MIT. See `LICENSE`. Forks must rename (the ChatChive name and logo are not covered by the code
 license).
