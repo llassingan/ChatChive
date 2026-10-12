@@ -1,0 +1,143 @@
+/* Landing screen. One column, capped at a comfortable reading measure, with the
+   drop zone carrying the visual weight (RHYTHM 1: nothing here competes with
+   it). Everything below the zone is quieter by size and color. */
+.landing {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-7) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+/* The brand is the page's single h1: it is the site title, and the lead lines
+   below it introduce the one action. Type stays close in size so the drop zone
+   remains the heaviest element on the screen. */
+.landing__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: var(--fw-semibold);
+}
+
+.landing__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-card);
+  background: var(--accent-strong);
+  color: var(--accent-on);
+}
+
+.landing__wordmark {
+  font-weight: var(--fw-semibold);
+}
+
+.landing__headline {
+  margin: var(--space-6) 0 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: var(--fw-medium);
+}
+
+.landing__lede {
+  margin: 0;
+  max-width: 28rem;
+  color: var(--text-secondary);
+}
+
+.landing__lede code {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+/* ---- Drop zone: the focal point of the screen (the one deliberate accent) ---- */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  width: 100%;
+  min-height: 13rem;
+  margin: var(--space-4) 0;
+  padding: var(--space-8) var(--space-7);
+  /* Dashed and visible: the boundary is the affordance. --divider (a hairline
+     tint) does not reach 3:1 against the panel (WCAG 1.4.11); --border-strong
+     does, and the dashes keep it from reading as a heavy box. */
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.dropzone:hover {
+  border-color: var(--text-secondary);
+}
+
+/* Dragover and focus share one state: the zone is the thing that is active. */
+.dropzone--active,
+.dropzone:has(input:focus-visible) {
+  border-color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
+}
+
+.dropzone:has(input:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.dropzone__glyph {
+  color: var(--text-secondary);
+}
+
+.dropzone--active .dropzone__glyph {
+  color: var(--accent-text);
+}
+
+.dropzone__action {
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+  color: var(--accent-text);
+}
+
+.dropzone__hint {
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+  max-width: 22rem;
+}
+
+.landing__disclaimer {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
+
+/* Tablet and up: give the drop zone more room and let the headline run wider. */
+@media (min-width: 768px) {
+  .landing {
+    padding-top: 4rem;
+    gap: var(--space-7);
+  }
+
+  .landing__brand {
+    font-size: 1.75rem;
+  }
+
+  .landing__headline {
+    font-size: 1.5rem;
+  }
+
+  .dropzone {
+    min-height: 15rem;
+  }
+}

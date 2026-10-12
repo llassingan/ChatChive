@@ -1,0 +1,51 @@
+/* Error screen. One message, one action back to the drop zone. The technical
+   detail is folded away so it never leads. */
+.error-view {
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.error-view__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-card);
+  background: var(--danger);
+  color: var(--danger-on);
+}
+
+.error-view__title {
+  margin: 0;
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+}
+
+.error-view__body {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.error-view__detail {
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
+
+.error-view__detail summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.error-view__detail p {
+  margin: var(--space-4) 0 0;
+  overflow-wrap: anywhere;
+}

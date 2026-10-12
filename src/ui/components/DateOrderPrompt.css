@@ -1,0 +1,74 @@
+/* Date-order prompt. Two equal options side by side on wide screens, stacked on
+   a phone, so the two readings are always compared at the same weight. */
+.date-order {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-7);
+}
+
+.date-order__title {
+  margin: 0;
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+}
+
+.date-order__lede {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.date-order__options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  width: 100%;
+}
+
+.date-order__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-height: 44px;
+  padding: var(--space-7);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.date-order__option:hover {
+  border-color: var(--text-secondary);
+  background: var(--bg-list-hover);
+}
+
+.date-order__option-label {
+  font-weight: var(--fw-semibold);
+}
+
+.date-order__option-samples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.date-order__sample {
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
+
+@media (min-width: 480px) {
+  .date-order__options {
+    grid-template-columns: 1fr 1fr;
+  }
+}

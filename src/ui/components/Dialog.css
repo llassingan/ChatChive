@@ -1,0 +1,52 @@
+/* Modal shell. The panel reuses the card token (14px mobile / 6px web) so a
+   dialog reads as the same material as the drop zone, not a second language.
+   Height is capped against dvh so a long help list never outgrows a phone
+   viewport with the browser chrome showing. */
+.dialog {
+  width: min(34rem, calc(100vw - 2 * var(--space-7)));
+  max-height: min(85dvh, 40rem);
+  padding: 0;
+  /* --text-secondary for the edge: --divider is a hairline tint that drops below
+     3:1 against the backdrop in every theme, so it cannot carry the panel
+     boundary on its own (WCAG 1.4.11). */
+  border: 1px solid var(--text-secondary);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.dialog__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.dialog__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-7) var(--space-7) var(--space-6);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dialog__title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+}
+
+.dialog__title:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.dialog__body {
+  padding: var(--space-7);
+  overflow-y: auto;
+}

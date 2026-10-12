@@ -10,13 +10,25 @@
 */
 import type { SVGProps } from 'react';
 
-export type IconName = 'chevron-left' | 'chevron-down' | 'search' | 'send';
+export type IconName =
+  | 'chevron-left'
+  | 'chevron-down'
+  | 'search'
+  | 'send'
+  | 'close'
+  | 'file'
+  | 'check'
+  | 'alert';
 
 const PATHS: Record<IconName, string> = {
   'chevron-left': 'M15 5 8 12l7 7',
   'chevron-down': 'M5 9l7 7 7-7',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4',
   send: 'M4 12 20 4l-4 16-4.5-6.5L4 12Z',
+  close: 'M6 6l12 12M18 6 6 18',
+  file: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5',
+  check: 'M5 12.5 10 17.5 19 6.5',
+  alert: 'M12 3.5 21 20H3l9-16.5ZM12 10v4M12 17.2v.2',
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

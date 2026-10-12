@@ -1,31 +1,47 @@
-import { Icon } from './icons/index.ts';
-import './App.css';
+/**
+ * App shell and view switch (E3). One screen at a time: the landing drop zone,
+ * the processing bar, the ambiguous-date prompt, the ready summary, or an
+ * error. The chat view (E4/E5) is a later sprint and is not faked here.
+ */
+import { DateOrderPrompt } from './components/DateOrderPrompt.tsx';
+import { ErrorView } from './components/ErrorView.tsx';
+import { Landing } from './components/Landing.tsx';
+import { ProgressView } from './components/ProgressView.tsx';
+import { ReadyPanel } from './components/ReadyPanel.tsx';
+import { useImportFlow } from './import/useImportFlow.ts';
+import './base.css';
+import './components/controls.css';
 
-// Placeholder shell. The real landing page, drop zone and chat view arrive in
-// later sprints (backlog E3, E4, E6). This proves the E1-2 tokens and the local
-// icon set resolve, and gives the no-network e2e test something to load.
 export function App() {
+  const flow = useImportFlow();
+  const { state } = flow;
+
   return (
-    <main className="app-shell">
-      <div className="app-shell__brand">
-        <span className="app-shell__mark" aria-hidden="true">
-          <Icon name="send" size={20} />
-        </span>
-        <h1>ChatChive</h1>
-      </div>
+    <div className="app">
+      {state.status === 'landing' ? <Landing onFile={flow.pick} /> : null}
 
-      <p>Open a WhatsApp chat export. It is read in your browser and never uploaded.</p>
+      {state.status === 'working' ? (
+        <ProgressView
+          phase={state.phase}
+          fraction={state.fraction}
+          fileName={state.file.name}
+          onCancel={flow.cancel}
+        />
+      ) : null}
 
-      <div className="token-check" aria-hidden="true">
-        <span className="token-check__bubble token-check__bubble--in">
-          Incoming bubble<span className="token-check__time">09.59</span>
-        </span>
-        <span className="token-check__bubble token-check__bubble--out">
-          Outgoing bubble<span className="token-check__time">10.09</span>
-        </span>
-      </div>
+      {state.status === 'choice' ? (
+        <DateOrderPrompt
+          samples={state.samples}
+          onChoose={flow.chooseDateOrder}
+          onCancel={flow.cancel}
+        />
+      ) : null}
 
-      <p className="disclaimer">Not affiliated with WhatsApp or Meta.</p>
-    </main>
+      {state.status === 'ready' ? (
+        <ReadyPanel chat={state.chat} fileName={state.file.name} onClose={flow.cancel} />
+      ) : null}
+
+      {state.status === 'error' ? <ErrorView error={state.error} onBack={flow.cancel} /> : null}
+    </div>
   );
 }

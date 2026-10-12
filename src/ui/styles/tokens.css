@@ -1,5 +1,5 @@
 /*
-  Design tokens — ported from DESIGN.md §1 (color, sender colors, typography,
+  Design tokens: ported from DESIGN.md §1 (color, sender colors, typography,
   spacing/radius/size). Backlog E1-2.
 
   Themes:
@@ -50,16 +50,30 @@
   /* ---- Color: accents & status ---- */
   --icon: #ffffff;
   --accent: #21c063;
+  /* --accent is the brand green. Two derived roles keep it AA-safe per theme:
+     --accent-strong is the fill that carries --accent-on text (a button), and
+     --accent-text is the accent used as text on the page background. In dark and
+     classic they equal --accent; light needs a darker green for both. */
+  --accent-strong: #21c063;
+  --accent-text: #21c063;
   --accent-on: #0b0b0b;
   --tick-read: #53bdeb;
   --tick-sent: rgba(255, 255, 255, 0.6);
   --danger: #f15c6d;
+  /* Glyph color for a filled --danger tile; verified AA against --danger in all
+     three themes (dark 6.08:1, light 4.61:1, classic 5.75:1). */
+  --danger-on: #0b0b0b;
   --mention: #53bdeb;
 
   /* ---- Color: pills, fabs, dividers, banners, badges ---- */
   --pill-bg: #1c1d1d;
   --fab-bg: #1f2121;
   --divider: rgba(255, 255, 255, 0.08);
+  /* Boundary for interactive surfaces (quiet buttons, option cards). --divider
+     is a decorative hairline at ~1.3:1; a control edge needs 3:1 against the
+     panel it sits on (WCAG 1.4.11). Verified: 3.86:1 vs --bg-chat,
+     3.52:1 vs --bg-panel. */
+  --border-strong: #6e6e6e;
   --banner-bg: #103529;
   --badge-bg: #21c063;
   --community-tile: #3b1f2b;
@@ -75,7 +89,7 @@
     sans-serif;
   --font-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
 
-  /* Type scale — rem-based so OS/browser font scaling works (DESIGN §5, R-25).
+  /* Type scale: rem-based so OS/browser font scaling works (DESIGN §5, R-25).
      Base is the mobile message size (17px) at the default 16px root.
      Pairs are size / line-height. Weights live alongside. */
   --fs-message: 1.0625rem; /* 17px */
@@ -128,8 +142,12 @@
   --bubble-min: 56px;
   --sticker-max: 160px;
 
-  /* ---- Focus ring (DESIGN §5, R-32) ---- */
-  --focus-ring: 2px solid var(--accent);
+  /* ---- Focus ring (DESIGN §5, R-32) ----
+     Uses --accent-text, not --accent: the ring must clear 3:1 against whatever
+     it sits on in every theme, and the brand green on the light page background
+     is only 2.51:1. Verified against --bg-chat: dark 8.23:1, light 6.40:1,
+     classic 6.14:1. */
+  --focus-ring: 2px solid var(--accent-text);
   --focus-offset: 2px;
 
   /* ---- Sender-name colors (DESIGN §1.2), indexable 0-15.
@@ -227,15 +245,25 @@
 
   --icon: #54656f;
   --accent: #1daa61;
+  /* Light surfaces are near-white, so the brand green fails AA as text and as a
+     button fill with white on it. #008069 is WhatsApp's own light-mode button
+     green (4.89:1 with white). As text on the beige page background it still
+     falls short at 4.09:1, so --accent-text goes one step darker to #05603A
+     (6.40:1 on #EFEAE2, 7.66:1 on #FFFFFF). */
+  --accent-strong: #008069;
+  --accent-text: #05603a;
   --accent-on: #ffffff;
   --tick-read: #53bdeb;
   --tick-sent: #667781;
   --danger: #ea0038;
+  --danger-on: #ffffff;
   --mention: #027eb5;
 
   --pill-bg: #ffffff;
   --fab-bg: #ffffff;
   --divider: #e9edef;
+  /* 3.79:1 vs --bg-chat #EFEAE2, 4.54:1 vs --bg-panel #FFFFFF. */
+  --border-strong: #767676;
   --banner-bg: #d9f7e6;
   --badge-bg: #1daa61;
 
@@ -282,15 +310,20 @@
 
   --icon: rgba(233, 237, 239, 0.75);
   --accent: #00a884;
+  --accent-strong: #00a884;
+  --accent-text: #00a884;
   --accent-on: #0b141a;
   --tick-read: #53bdeb;
   --tick-sent: rgba(233, 237, 239, 0.6);
   --danger: #f15c6d;
+  --danger-on: #0b141a;
   --mention: #53bdeb;
 
   --pill-bg: #182229;
   --fab-bg: #202c33;
   --divider: rgba(134, 150, 160, 0.15);
+  /* 4.22:1 vs --bg-chat #0B141A, 3.96:1 vs --bg-panel #111B21. */
+  --border-strong: #6e7a81;
   --banner-bg: #103529;
   --badge-bg: #00a884;
 

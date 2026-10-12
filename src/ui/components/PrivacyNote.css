@@ -1,0 +1,53 @@
+/* Privacy note. Deliberately quiet: secondary color, no icon, no badge. It sits
+   under the drop zone and reads as a caption to the action above it. */
+.privacy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-7);
+  /* A hairline for grouping, not a control edge: this is a caption under the
+     drop zone, so --divider is the right weight here (compare --border-strong
+     on the interactive surfaces). */
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-card);
+  background: var(--bg-panel);
+}
+
+.privacy__claim {
+  margin: 0;
+  max-width: 30rem;
+  color: var(--text-secondary);
+}
+
+.privacy__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.privacy__body p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.privacy__body p:first-child {
+  color: var(--text-primary);
+}
+
+.privacy__body code {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+/* Not a flex column: flex items do not generate list markers, so the step
+   numbers would disappear. Spacing comes from the adjacent-sibling margin. */
+.privacy__steps {
+  margin: 0;
+  padding-left: var(--space-8);
+  color: var(--text-secondary);
+}
+
+.privacy__steps li + li {
+  margin-top: var(--space-4);
+}

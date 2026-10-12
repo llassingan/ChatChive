@@ -1,0 +1,102 @@
+/* Processing screen. Narrow, centered, one action. No spinner: the phase label
+   and the bar are the only motion, and the bar only moves when the pipeline
+   reports real progress. */
+.progress-view {
+  max-width: 26rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.progress-view__title {
+  margin: 0;
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+}
+
+.progress-view__file {
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
+
+.progress-view__phase {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Native progress, restyled from the tokens. The fill is the neutral primary
+   text color, not --accent: the accent is spent on the landing screen's one
+   action, and a progress fill is not a call to action (R-31). The 1px border
+   uses --text-secondary because the track fill (--bg-input) is nearly the page
+   color in every theme and would otherwise have no visible boundary
+   (WCAG 1.4.11, 3:1). */
+.progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  border: 1px solid var(--text-secondary);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-input);
+  appearance: none;
+}
+
+.progress::-webkit-progress-bar {
+  background: var(--bg-input);
+  border-radius: 999px;
+}
+
+.progress::-webkit-progress-value {
+  background: var(--text-primary);
+  border-radius: 999px;
+  transition: width 120ms ease;
+}
+
+.progress::-moz-progress-bar {
+  background: var(--text-primary);
+  border-radius: 999px;
+}
+
+/* Indeterminate: a narrow highlight sweeping across a neutral track, the
+   conventional "working, length unknown" cue. Reduced motion swaps it for a
+   static half-filled track so the state is still visible. */
+.progress--indeterminate {
+  position: relative;
+  background: var(--bg-input);
+}
+
+.progress--indeterminate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--text-primary);
+  animation: progress-sweep 1.3s ease-in-out infinite;
+}
+
+@keyframes progress-sweep {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(260%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress--indeterminate::after {
+    animation: none;
+    transform: translateX(75%);
+  }
+
+  .progress::-webkit-progress-value {
+    transition: none;
+  }
+}

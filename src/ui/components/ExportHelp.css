@@ -1,0 +1,57 @@
+/* Export help body. Two numbered lists with equal weight, separated by
+   whitespace rather than boxes (RHYTHM 1). */
+.export-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.export-help__intro,
+.export-help__note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Not flex columns: flex items do not generate list markers, so the step
+   numbers and bullets would disappear. */
+.export-help__types {
+  margin: 0;
+  padding-left: var(--space-8);
+  color: var(--text-secondary);
+}
+
+.export-help__types li + li {
+  margin-top: var(--space-4);
+}
+
+.export-help__types strong {
+  color: var(--text-primary);
+  font-weight: var(--fw-medium);
+}
+
+.export-help code {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+.export-help__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.export-help__heading {
+  margin: 0;
+  font-size: var(--fs-sender);
+  font-weight: var(--fw-semibold);
+}
+
+.export-help__steps {
+  margin: 0;
+  padding-left: var(--space-8);
+  color: var(--text-secondary);
+}
+
+.export-help__steps li + li {
+  margin-top: var(--space-4);
+}

@@ -1,0 +1,77 @@
+/* Shared controls. Three roles only: the primary action (accent, one per
+   screen), a quiet secondary action, and a text button for the help and
+   privacy links. Radius comes from the card token so controls match the drop
+   zone; nothing here is pill-shaped (R-11). */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: 44px;
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.button--primary {
+  background: var(--accent-strong);
+  color: var(--accent-on);
+}
+
+.button--primary:hover {
+  background: color-mix(in srgb, var(--accent-strong) 88%, var(--text-primary));
+}
+
+.button--quiet {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.button--quiet:hover {
+  background: var(--bg-list-hover);
+}
+
+/* Text button: the lowest-weight affordance, for opening help and privacy
+   dialogs. Underlined so it reads as a link even without color. */
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border: none;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  text-decoration-thickness: 2px;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--bg-list-hover);
+  color: var(--text-primary);
+}
