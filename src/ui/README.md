@@ -4,11 +4,13 @@ The React view layer. Styled from the design tokens and component specs in `DESI
 Consumes the shared data model from `src/types`. Owned by the frontend track.
 
 - `App.tsx`: app shell and view switch. Renders exactly one screen at a time:
-  landing, progress, date prompt, ready summary or error (backlog E3). It owns
+  landing, progress, date prompt, the chat view, or error (backlog E3, E4). It owns
   no state; that lives in `import/useImportFlow.ts`.
 - `base.css`: the `visually-hidden` utility and the app shell height.
-- `format.ts`: date-range and time formatting for the ready summary.
-- `components/`: one file per screen plus the shared dialog and button styles.
+- `format.ts`: date-range, day-label and clock formatting for the chat view.
+- `components/`: one file per import-flow screen plus the shared dialog and button styles.
+- `chat/`: the message view (E4): the row layout pass, the virtualized list, the bubble
+  row, the "Which one is you?" picker and the bubble tails.
 - `import/`: the import state machine and the error copy.
 - `styles/tokens.css`: design tokens (E1-2). The single source for color, type, spacing,
   radius and size. Imported by `global.css`.
@@ -159,7 +161,7 @@ Deliberate deviations from the raw `DESIGN.md` values, to clear AA:
 - The import-flow surfaces use `--border-strong`, not `--divider`, for control edges. `--divider`
   is a decorative hairline (about 1.3:1 against the panel); a button or drop-zone boundary needs
   3:1. `--divider` is still used where the line only groups content (the privacy note, the
-  "message view is not here yet" panel).
+  footer separator in the chat view).
 
 Known limitations carried forward (not blocking E1-2/E1-3):
 

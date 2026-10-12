@@ -1,0 +1,128 @@
+/*
+  Message list (DESIGN.md §3.5, §3.17). The scroll container fills the chat pane
+  between the header and the read-only footer; the virtualizer sizes its inner
+  spacer and positions each row with a transform.
+*/
+
+/* The scroll container fills the chat pane between the header and the read-only
+   footer; the virtualizer sizes its inner spacer and positions each row with a
+   transform. The wrapper is the positioning context for the floating button. */
+.chat-list-wrap {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.chat-list {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.chat-list__sizer {
+  position: relative;
+  width: 100%;
+}
+
+/* Rows are absolutely stacked by transform, so the virtualizer controls vertical
+   position and the container just provides width. */
+.chat-list__item {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* Sticky date pill: pinned 8px under the header, above the bubbles (DESIGN §3.5).
+   It stays mounted while a day is active so it can fade; `data-visible` drives
+   the fade (DESIGN §3.5: 200ms, about 1.5s after scrolling stops). */
+.chat-list__sticky {
+  position: sticky;
+  top: var(--space-4);
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.chat-list__sticky[data-visible='true'] {
+  opacity: 1;
+}
+
+/* Date separator (DESIGN §3.5). Mobile: 24px above, 16px below. */
+.day {
+  display: flex;
+  justify-content: center;
+  padding: 24px var(--space-6) 16px;
+}
+
+.day__pill {
+  display: inline-block;
+  min-width: 120px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--pill-bg);
+  color: var(--pill-text);
+  font-size: var(--fs-date-pill);
+  font-weight: var(--fw-semibold);
+  text-align: center;
+  box-shadow: var(--shadow-bubble);
+}
+
+/* Scroll-to-bottom button (DESIGN §3.17): 16px from the right, 16px above the
+   footer on mobile; 20px on web. Anchored in the wrapper, outside the scroller. */
+.chat-list__to-bottom {
+  position: absolute;
+  right: var(--space-7);
+  bottom: var(--space-7);
+  z-index: 3;
+  width: var(--size-fab);
+  height: var(--size-fab);
+  background: var(--fab-bg);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-fab);
+}
+
+@media (min-width: 768px) {
+  .day {
+    padding: 12px var(--space-6);
+  }
+
+  .day__pill {
+    font-weight: var(--fw-medium);
+  }
+
+  .chat-list__to-bottom {
+    right: 20px;
+    bottom: 20px;
+  }
+}
+
+/* Respect reduced motion (DESIGN §4): the button's fade and scale, and the pill's
+   fade, collapse to instant, so nothing animates for a reader who asked for
+   stillness. The pill still hides after 1.5s, it just stops transitioning. */
+@media (prefers-reduced-motion: no-preference) {
+  .chat-list__sticky {
+    transition: opacity 200ms ease;
+  }
+
+  .chat-list__to-bottom {
+    animation: to-bottom-in 150ms ease-out;
+  }
+}
+
+@keyframes to-bottom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

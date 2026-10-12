@@ -11,7 +11,7 @@ export type ImportState =
   | { status: 'landing' }
   | { status: 'working'; file: File; phase: ParsePhase; fraction: number | undefined }
   | { status: 'choice'; file: File; samples: Array<{ raw: string; asDMY: string; asMDY: string }> }
-  | { status: 'ready'; file: File; chat: Chat }
+  | { status: 'chat'; file: File; chat: Chat }
   | { status: 'error'; error: ParseError };
 
 /** Phases in the order the pipeline reports them; `ready` is the last one. */
@@ -78,11 +78,13 @@ export function useImportFlow(): ImportFlow {
         if (sessionRef.current !== session) return;
 
         if (result.ok) {
-          // The message view is a later sprint, so nothing will call extract()
-          // yet; releasing the archive now keeps memory flat (F-NAV-6).
+          // The chat view renders from the parsed `Chat` and does not read media
+          // bytes yet (E5 lands next sprint), so releasing the archive now keeps
+          // memory flat (F-NAV-6). `file` stays in state so E5 can reopen a
+          // session and call `extract()` lazily.
           session.close();
           sessionRef.current = null;
-          setState({ status: 'ready', file, chat: result.chat });
+          setState({ status: 'chat', file, chat: result.chat });
           return;
         }
 

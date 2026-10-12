@@ -1,0 +1,138 @@
+/*
+  Chat view shell (DESIGN.md §2.1 mobile, §2.2 web). Header, virtualized list,
+  read-only footer. The list fills the space between header and footer so the
+  page never scrolls as a whole and the sticky date pill stays under the header.
+*/
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--bg-chat);
+}
+
+.chat__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 0 0 auto;
+  min-height: var(--size-header);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--divider);
+}
+
+.chat__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.chat__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat__title {
+  font-size: var(--fs-header-title);
+  font-weight: var(--fw-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat__subtitle {
+  color: var(--text-secondary);
+  font-size: var(--fs-header-subtitle);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A group with no "me" chosen shows the group glyph rather than inventing a
+   person's avatar (R-23). */
+.avatar--group {
+  background: var(--icon-circle);
+  color: var(--text-secondary);
+}
+
+/* Header overflow menu. A native <details> so open/close, Escape and outside
+   focus work without a popover library. */
+.chat__menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.chat__menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.chat__menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat__menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-2));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: var(--space-2);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-card);
+  background: var(--bg-input);
+  box-shadow: var(--shadow-fab);
+}
+
+.chat__menu-item {
+  display: block;
+  width: 100%;
+  padding: var(--space-5) var(--space-6);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat__menu-item:hover {
+  background: var(--bg-list-hover);
+}
+
+/* Read-only footer replacing the composer (F-RES-5). Mobile: 50px + safe area. */
+.chat__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex: 0 0 auto;
+  min-height: var(--size-composer);
+  padding: 0 var(--space-6);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg-composer);
+  border-top: 1px solid var(--divider);
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+}
+
+.chat__footer-stat {
+  white-space: nowrap;
+}
+
+.chat__footer-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--divider);
+}
+
+.chat__footer-note {
+  margin-left: auto;
+  white-space: nowrap;
+}

@@ -1,0 +1,74 @@
+/*
+  "Which one is you?" picker (E3-4). A list of participants with a message count
+  each, so the choice is informed by what is actually in the export, plus a
+  "Nobody" answer. Rows are full-width buttons with a 44px minimum target.
+*/
+
+.me-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.me-picker__lede {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.me-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.me-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.me-picker__row:hover {
+  background: var(--bg-list-hover);
+}
+
+.me-picker__row[aria-pressed='true'] {
+  border-color: var(--border-strong);
+  background: var(--bg-list-active);
+}
+
+.me-picker__name {
+  font-weight: var(--fw-medium);
+  overflow-wrap: anywhere;
+}
+
+.me-picker__count {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+  white-space: nowrap;
+}
+
+.me-picker__check {
+  display: inline-flex;
+  color: var(--accent-text);
+}
+
+.me-picker__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}

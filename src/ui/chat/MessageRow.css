@@ -1,0 +1,315 @@
+/*
+  Message row styling (DESIGN.md §3.1-3.4, §3.6, §3.14). One file for the bubble,
+  its run decorations, the meta block and the date/system pills.
+
+  Breakpoint rule (DESIGN §3.2): mobile puts the tail and the avatar on the LAST
+  bubble of a run, web puts them on the FIRST. Both tail elements are rendered
+  and CSS reveals the right one, so no JS breakpoint listener is needed and the
+  layout cannot get out of sync with the viewport.
+*/
+
+.row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: 0 var(--space-6);
+}
+
+.row--in {
+  justify-content: flex-start;
+}
+
+.row--out {
+  justify-content: flex-end;
+}
+
+/* Reserved avatar column so every incoming bubble in a group lines up whether or
+   not the avatar circle is drawn on this row (DESIGN §3.4). */
+.row__avatar {
+  flex: 0 0 var(--size-avatar-col);
+  width: var(--size-avatar-col);
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  align-self: stretch;
+}
+
+.row--out .row__avatar {
+  display: none;
+}
+
+/* Run spacing: tight inside a run, a clear break between runs and days. */
+.row + .row {
+  margin-top: 10px;
+}
+
+.row + .row[data-run='same'] {
+  margin-top: var(--space-2);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-avatar);
+  height: var(--size-avatar);
+  border-radius: 50%;
+  color: var(--avatar-letter);
+  font-size: 0.8125rem;
+  font-weight: var(--fw-medium);
+  user-select: none;
+}
+
+.bubble {
+  position: relative;
+  max-width: var(--bubble-max);
+  min-width: var(--bubble-min);
+  padding: 7px 10px 8px 12px;
+  border-radius: var(--radius-bubble);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 768px) {
+  .bubble {
+    padding: 6px 7px 8px 9px;
+  }
+}
+
+.bubble--in {
+  background: var(--bubble-in);
+  box-shadow: var(--shadow-bubble);
+}
+
+.bubble--out {
+  background: var(--bubble-out);
+  box-shadow: var(--shadow-bubble);
+}
+
+/* The bubble's corner is squared where a tail attaches, so the tail reads as an
+   extension of the bubble (DESIGN §3.2). Mobile attaches at the bottom of the
+   last bubble; web at the top of the first (the override below). */
+.bubble--last.bubble--in {
+  border-bottom-left-radius: 0;
+}
+
+.bubble--last.bubble--out {
+  border-bottom-right-radius: 0;
+}
+
+.bubble__content {
+  /* A flow-root so the floated meta is contained inside the bubble. Block, not
+     flex: the meta floats to the end of the last text line, which the flex
+     layout would not allow (DESIGN §3.1). */
+  display: flow-root;
+}
+
+.bubble__text {
+  display: inline;
+  white-space: pre-wrap;
+}
+
+/* Meta floats to the end of the last line when there is room, and wraps onto its
+   own right-aligned line when there is not (DESIGN §3.1). */
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  float: right;
+  margin: var(--space-1) 0 0 var(--space-5);
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  line-height: var(--lh-message);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meta__edited {
+  margin-right: var(--space-2);
+}
+
+/* Sender header: name left, identifier right, single line, name ellipsizes
+   first (DESIGN §3.3). */
+.sender {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-7);
+  margin-bottom: var(--space-1);
+  font-size: var(--fs-sender);
+  line-height: var(--lh-sender);
+}
+
+.sender__name {
+  font-weight: var(--fw-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sender__phone {
+  margin-left: auto;
+  color: var(--text-secondary);
+}
+
+/* Tails are absolutely placed outside the bubble edge; only the run edge has one
+   visible per breakpoint (DESIGN §3.2). Mobile: last bubble, bottom corner. */
+.tail {
+  position: absolute;
+  color: inherit;
+  display: none;
+  pointer-events: none;
+}
+
+.tail__shape {
+  display: block;
+}
+
+.tail--last {
+  bottom: 0;
+  display: block;
+}
+
+.bubble--in .tail--last {
+  left: calc(var(--size-tail-w) * -1);
+}
+
+.bubble--out .tail--last {
+  right: calc(var(--size-tail-w) * -1);
+}
+
+/* The bubble color is the tail fill; the tail inherits `color` from the bubble
+   through this wrapper, so set it here rather than on the svg. */
+.bubble--in .tail {
+  color: var(--bubble-in);
+}
+
+.bubble--out .tail {
+  color: var(--bubble-out);
+}
+
+@media (min-width: 768px) {
+  /* Web: tail on the first bubble's top corner, no bottom tail (DESIGN §3.2). */
+  .tail--last {
+    display: none;
+  }
+
+  .tail--first {
+    display: block;
+    top: 0;
+  }
+
+  .bubble--in .tail--first {
+    left: calc(var(--size-tail-w) * -1);
+  }
+
+  .bubble--out .tail--first {
+    right: calc(var(--size-tail-w) * -1);
+  }
+
+  /* The squared corner moves to the top, where the web tail attaches. */
+  .bubble--last.bubble--in {
+    border-bottom-left-radius: var(--radius-bubble);
+  }
+
+  .bubble--last.bubble--out {
+    border-bottom-right-radius: var(--radius-bubble);
+  }
+
+  .bubble--first.bubble--in {
+    border-top-left-radius: 0;
+  }
+
+  .bubble--first.bubble--out {
+    border-top-right-radius: 0;
+  }
+
+  /* Web: avatar on the first bubble of a run, top-aligned. */
+  .row__avatar {
+    align-items: flex-start;
+  }
+}
+
+/* System notice: a centered pill, secondary text, multi-line allowed; the
+   encryption variant gets the lock tint (DESIGN §3.6). */
+.row--system {
+  justify-content: center;
+  padding: var(--space-4) var(--space-6);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 85%;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--pill-bg);
+  color: var(--pill-text-secondary);
+  font-size: var(--fs-timestamp);
+  text-align: center;
+  box-shadow: var(--shadow-bubble);
+  overflow-wrap: anywhere;
+}
+
+.pill--encryption {
+  color: var(--notice-encryption);
+}
+
+/* Media tile (E5 placeholder). The real image or player replaces this next
+   sprint; the tile reports the file the parser resolved. */
+.media {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: var(--space-1) 0;
+  padding: var(--space-5);
+  border-radius: var(--radius-quote);
+  background: var(--card-inner);
+}
+
+.media--missing {
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+}
+
+.media__glyph {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 48px;
+  border-radius: var(--radius-quote);
+  background: var(--icon-circle);
+  color: var(--text-secondary);
+}
+
+.media__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.media__title {
+  font-size: var(--fs-handle);
+  overflow-wrap: anywhere;
+}
+
+.media__sub {
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+}
+
+.bubble__deleted,
+.bubble__empty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.bubble__empty {
+  font-style: normal;
+}
