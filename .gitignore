@@ -19,13 +19,22 @@ test-results/
 !.vscode/extensions.json
 *.log
 
-# Personal data — never commit real chat exports (PRD §E2-1, S-4)
+# Personal data: never commit real chat exports (PRD §E2-1, S-4)
 *.zip
 sample/
 WhatsApp Chat with*
 
+# Exception: the one synthetic zip the e2e suite needs. Hand-built fixture with
+# fake content (tests/e2e/fixtures/README.md), not a chat export. Scoped to the
+# exact file so a real export dropped in this folder stays ignored.
+!tests/e2e/fixtures/export.zip
+
+# Scratch: unwanted files are moved here instead of deleted (project rule)
+.trash/
+
 
 .kiro
 .omp
-BACKLOG.MD
-PRD.MD
+BACKLOG.md
+PRD.md
+.agent-report
