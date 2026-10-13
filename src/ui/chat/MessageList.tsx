@@ -46,10 +46,17 @@ export interface MessageListProps {
 const PILL_VISIBLE_MS = 1500;
 
 /**
- * Frames to keep re-pinning to the bottom after a jump. Row measurement lands
- * over the first frames; a short burst covers that without a scroll listener.
+ * Frames the bottom pin is allowed to keep rewriting, and the stillness it waits
+ * for before it stops. The exit condition is arrival, not a frame count: the
+ * content settles in stages (rows measure, then the sticky pill mounts and adds
+ * its own 27px to the list), and on WebKit at 1440x900 those stages land up to
+ * 29 frames apart (measured from the mount frame), so a fixed burst of frames
+ * ended before the pill had grown the list and left it 27px short of the newest
+ * message in about half of loads. `PIN_SETTLE_FRAMES` is above that measured
+ * gap; `PIN_FRAMES` is only a safety bound for a list that never stops growing.
  */
-const PIN_FRAMES = 30;
+const PIN_FRAMES = 120;
+const PIN_SETTLE_FRAMES = 32;
 
 /**
  * Seed height per row so the first measurement pass lands near the real height
@@ -59,8 +66,9 @@ const PIN_FRAMES = 30;
  * Text is the hard case, because E4-6 lets one message carry blocks and jumbo
  * emoji: the plain `lines * 22` estimate under-counts a row holding a fenced
  * block or a list by whatever the blocks cost, and under-counts a jumbo row by
- * two to three times. A bad seed makes the first measurement pass jumpy, and the
- * bottom pin only runs for `PIN_FRAMES`, so the shape is read here (§4.9).
+ * two to three times. A bad seed makes the measurement pass jumpy: rows above a
+ * row that measures differently shift by the difference. The shape is read here
+ * (§4.9).
  *
  * The shape is only read for a row that `looksStructured` (layout.ts) says might
  * have one.
@@ -90,9 +98,9 @@ function estimateRow(row: MessageRow['message']): number {
 /**
  * Seed height for a media row (E5 §4.4). The kind decides the box, and a
  * caption adds one line: a flat 150 for every media row under-seeds an image by
- * more than a hundred pixels, and the bottom pin only runs for `PIN_FRAMES`, so
- * a bad seed leaves the first paint short. Values are seeds, not truth; the
- * virtualizer adjusts the scroll offset when a measured row differs (§4.4).
+ * more than a hundred pixels, so a bad seed leaves the first paint short until
+ * the row is measured. Values are seeds, not truth; the virtualizer adjusts the
+ * scroll offset when a measured row differs (§4.4).
  */
 function estimateMedia(row: MediaMessage): number {
   const { media } = row;
@@ -180,20 +188,42 @@ export function MessageList({ chat, session }: MessageListProps) {
   }, []);
 
   // Pin to the newest message on arrival (F-VIEW-13). Row measurement and the
-  // list's own padding settle over a few frames, and the total height can change
-  // after the last measurement, so pin for a short burst of frames rather than
-  // once. `scrollTop` clamps to the maximum, which reaches the true bottom in
-  // every engine; `scrollToIndex(align: 'end')` left a few px short in WebKit
-  // because it computed the offset from not-yet-final measurements.
+  // list's own padding settle over a few frames, and the content settles in
+  // stages rather than once: rows measure, then the sticky pill mounts and adds
+  // its own height to the list. `scrollTop` clamps to the maximum, which reaches
+  // the true bottom in every engine; `scrollToIndex(align: 'end')` left a few px
+  // short in WebKit because it computed the offset from not-yet-final
+  // measurements.
   //
-  // The burst ends after `PIN_FRAMES`, on unmount, or the moment the reader
-  // takes over. "The reader takes over" means a real input: a wheel, touch,
-  // pointer press or a scroll key. It deliberately does not mean a scroll event,
-  // because the browser also fires those while the list is still settling after
-  // mount, and yielding to those would abandon the jump before it arrives. The
-  // burst only ever rewrites the position it is already at, so it fires no event
-  // of its own and does not need to guard against itself.
+  // The burst ends when the height has stopped changing, on unmount, or the
+  // moment the reader takes over. It deliberately does not end after a fixed
+  // number of frames: the last growth stage lands up to 29 frames after the list
+  // mounts (measured on WebKit at 1440x900), so a fixed thirty-frame burst
+  // stopped before the pill had grown the list and rested 27px short of the
+  // newest message in about half of loads. "The reader takes over" means a real
+  // input: a wheel, touch, pointer press or a scroll key. It deliberately does
+  // not mean a scroll event, because the browser also fires those while the list
+  // is still settling after mount, and yielding to those would abandon the jump
+  // before it arrives. The burst only ever rewrites the position it is already
+  // at, so it fires no event of its own and does not need to guard against
+  // itself.
+  //
+  // A settled-height exit alone is still a guess about the future: the pill's
+  // mount is a React commit caused by this pin's own write, so under CPU load it
+  // can land *after* the burst has stopped, and no window of frames can promise
+  // otherwise. Measured on WebKit at 1440x900, desktop-light, at 4-way parallel
+  // load: a fixed quiet window left the list 27px short in 1 of 100 opens (the
+  // same state as the pre-fix defect), which is one open too many for a P0
+  // requirement. `activeDay` is the signal that mount is keyed on (the sticky
+  // div renders only when it is set), so the effect re-runs and the pin restarts
+  // at exactly the moment the list grows, however late that is. The frame bound
+  // stays as a safety net for a list that never stops growing; it is no longer
+  // the exit that decides correctness.
   const totalSize = virtualizer.getTotalSize();
+  // The sticky div renders only while a day is active, and it occupies space in
+  // the flow, so this boolean flips exactly when the list gains the pill's
+  // height. It is a dependency of the pin below.
+  const pillMounted = activeDay !== null;
   const pinRaf = useRef<number | null>(null);
   const pinActive = useRef(false);
   const releasePin = useCallback(() => {
@@ -204,19 +234,34 @@ export function MessageList({ chat, session }: MessageListProps) {
     if (!atBottom) return;
     pinActive.current = true;
     let frame = 0;
+    let quiet = 0;
+    let previousHeight = -1;
     const pin = () => {
       if (!pinActive.current) return;
       const element = scrollRef.current;
+      // `scrollHeight` is the whole scroll container: the rows through the
+      // sizer, plus the sticky pill, which is a sibling of the sizer and is what
+      // the last growth stage adds.
+      const height = element?.scrollHeight ?? -1;
+      quiet = height === previousHeight ? quiet + 1 : 0;
+      previousHeight = height;
       if (element) element.scrollTop = element.scrollHeight;
-      if (++frame < PIN_FRAMES) {
-        pinRaf.current = requestAnimationFrame(pin);
-      } else {
+      // Settled: the height has held still for long enough that no further
+      // stage is pending, and the write above has already reached the bottom of
+      // that final height. `PIN_FRAMES` remains as a bound for a list that never
+      // stops growing, so this cannot loop forever.
+      if (quiet >= PIN_SETTLE_FRAMES || ++frame >= PIN_FRAMES) {
         pinActive.current = false;
+        return;
       }
+      pinRaf.current = requestAnimationFrame(pin);
     };
     pinRaf.current = requestAnimationFrame(pin);
     return releasePin;
-  }, [atBottom, releasePin]);
+    // `pillMounted` is the growth signal, not a rendering input: when the pill
+    // mounts and adds its height, this effect re-runs and the pin restarts
+    // against the new height. See the note above.
+  }, [atBottom, releasePin, pillMounted]);
 
   // Scroll bookkeeping, throttled to one pass per animation frame. A scroll
   // gesture fires several events per frame, and each pass re-renders the list
