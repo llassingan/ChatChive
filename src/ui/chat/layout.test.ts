@@ -136,13 +136,23 @@ describe('buildRows, day separators', () => {
   });
 
   it('labels a day within the last week by weekday', () => {
-    // 5 June 2026 is a Friday, 7 June a Sunday; `now` is 9 June.
+    // The expected name is computed with the same `Intl` call `format.ts` uses,
+    // not hardcoded English: the label follows the host locale by design, and
+    // matching `/^Friday$/` made this test fail under `de-DE` (`expected
+    // 'Freitag' …`) for a reason unrelated to the row building it protects.
+    // 5 June 2026 is the day under test; `now` is 9 June.
+    const timestamp = at(5, 10);
     const rows = buildRows(
-      chatWith([msg({ id: 'm0', senderId: 'a', timestamp: at(5, 10) })]),
+      chatWith([msg({ id: 'm0', senderId: 'a', timestamp })]),
       new Date(2026, 5, 9, 12).getTime(),
     );
     const day = rows.find((row) => row.type === 'day');
-    expect(day && day.type === 'day' ? day.label : null).toMatch(/^Friday$/);
+    const expectedWeekday = new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(
+      timestamp,
+    );
+    expect(day && day.type === 'day' ? day.label : null).toBe(expectedWeekday);
+    // And it is a weekday, not the full-date fallback the next branch produces.
+    expect(day && day.type === 'day' ? day.label : null).not.toContain('2026');
   });
 });
 

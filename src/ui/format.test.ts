@@ -49,16 +49,40 @@ describe('formatDayLabel', () => {
   });
 
   it('names the weekday within the last week', () => {
-    // Two days before a Wednesday is a Monday.
-    expect(formatDayLabel(at(2026, 6, 8), now)).toMatch(/^Monday$/);
-    expect(formatDayLabel(at(2026, 6, 5), now)).toMatch(/^Friday$/);
+    // The expected names come from the same `Intl` call the module makes, not
+    // from hardcoded English. `format.ts:19` builds its weekday formatter with
+    // `Intl.DateTimeFormat(undefined, …)`, so it follows the HOST locale by
+    // design (the module comment says so: "we render them in the viewer's
+    // locale"). Asserting `/^Monday$/` made this test fail under `de-DE`
+    // (`expected 'Montag' to match /^Monday$/`) for a reason unrelated to the
+    // property it protects. What it really claims is that the label is the
+    // weekday of the RIGHT day, and that is what is pinned below.
+    const weekdayOf = (date: number) =>
+      new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(date);
+    const monday = at(2026, 6, 8);
+    const sunday = at(2026, 6, 7);
+
+    // Two days before a Wednesday is a Monday, and three before is a Sunday.
+    expect(formatDayLabel(monday, now)).toBe(weekdayOf(monday));
+    expect(formatDayLabel(sunday, now)).toBe(weekdayOf(sunday));
+    expect(formatDayLabel(at(2026, 6, 5), now)).toBe(weekdayOf(at(2026, 6, 5)));
+    // Not merely "some weekday": the mapping to the correct day is the claim.
+    expect(formatDayLabel(monday, now)).not.toBe(weekdayOf(sunday));
   });
 
   it('falls back to a full date at and beyond a week', () => {
     const label = formatDayLabel(at(2026, 6, 3), now);
     expect(label).toContain('2026');
     expect(label).not.toBe('Today');
-    expect(label).not.toMatch(/^Monday$/);
+    // Replaced a `not.toMatch(/^Monday$/)` that could not fail: the fallback
+    // always carries a day number and a year, so it could never be a bare
+    // weekday name whatever the implementation did. These two can fail, because a
+    // weekday name has no digit and no year in it, and they pin the same
+    // intent, that the label is the full-date branch and not the weekday one.
+    expect(label).toMatch(/\d/);
+    expect(label).not.toBe(
+      new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(at(2026, 6, 3)),
+    );
   });
 });
 

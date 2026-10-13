@@ -14,6 +14,11 @@ sample export).
 | `script-injection.txt` | Message bodies carrying `<script>` and `<img onerror>`, for the S-5 test               |
 | `formatting.txt`       | Every inline marker, block code, quote, both list kinds, links and jumbo emoji (E4-6)  |
 
+`export.zip` also carries the E6-4 visual baselines (`tests/e2e/visual.spec.ts`),
+which is why it holds real media rather than text alone: the baselines cover a
+decoded image and a voice player, not just bubbles. One fixture for both keeps
+the two suites from drifting onto different shapes of chat.
+
 Both `.zip`s are hand-built (plain DEFLATE archives), and their media bytes are
 real and decodable, because E5 renders them: `export.zip` carries a 400x300 JPEG
 and a 1.0 s Ogg Opus, and `media.zip` carries one entry per kind (see below).

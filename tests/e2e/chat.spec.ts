@@ -171,7 +171,13 @@ test('the sticky date pill tracks the day and fades out once scrolling stops (E4
   // While scrolling, a floating copy of the current day's pill is up.
   await expect(pill).toHaveAttribute('data-visible', 'true');
   await expect(page.locator('.chat-list__sticky .day__pill')).not.toBeEmpty();
-  expect(await pill.evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
+  // `opacity` is a transitioned property (`.chat-list__sticky` animates it over
+  // 200ms, MessageList.css), so a single read can land mid-animation and see a
+  // value between 0 and 1. The claim is that it reaches 1 while the pill is up,
+  // which is what polling asserts; the one-shot read asserted the incidental
+  // timing of the wheel-to-read gap instead. The fade-out check below has always
+  // polled, for the same reason.
+  await expect.poll(() => pill.evaluate((node) => getComputedStyle(node).opacity)).toBe('1');
 
   // DESIGN §3.5: it fades out about 1.5s after scrolling stops.
   await expect(pill).toHaveAttribute('data-visible', 'false', { timeout: 4000 });
@@ -319,12 +325,32 @@ test.describe('every shipped theme renders the chat', () => {
       }, theme);
 
       await openZip(page);
+
+      // Establish that the theme actually applied before asserting anything
+      // about how it looks. Without this line the two assertions below are
+      // theme-invariant: measured, "7 messages" is visible and the overflow is 0
+      // with the theme applied, with the wrong theme, and with no `data-theme`
+      // at all, which is the state SPRINT-5.MD §4.4's H1 left behind, where a
+      // loop named "every shipped theme" ran against the default for two
+      // sprints while passing.
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
       await expect(page.getByText('7 messages')).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         ),
       ).toBeLessThanOrEqual(0);
+
+      // And the theme is visible, not merely set: the timestamp takes
+      // `--text-secondary`, whose three values (measured on the built app with
+      // `export.zip`) are all different. A loop that asserts only overflow and a
+      // message count cannot tell one theme from another; this can.
+      const secondary = { light: 'rgb(84, 100, 109)', classic: 'rgb(192, 206, 214)' }[theme];
+      expect(secondary, `no measured --text-secondary for theme ${theme}`).toBeDefined();
+      if (secondary) {
+        await expect(page.locator('.meta').first()).toHaveCSS('color', secondary);
+      }
     });
   }
 });

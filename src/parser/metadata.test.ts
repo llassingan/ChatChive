@@ -64,12 +64,21 @@ describe('phone numbers', () => {
 
 describe('participant presentation', () => {
   it('assigns a color index in 0..15, deterministically', () => {
-    for (const id of ['Mira Vale', 'Toko Senja', '+15550192834']) {
-      const index = colorIndexFor(id);
-      expect(index).toBeGreaterThanOrEqual(0);
-      expect(index).toBeLessThanOrEqual(15);
-      expect(colorIndexFor(id)).toBe(index);
+    // Exact indices, not `>= 0` and `<= 15`. Both of those bounds restate the
+    // implementation (`(hash >>> 0) % 16` guarantees them for every input), so
+    // neither could fail and the pair proved nothing. Pinning the measured
+    // indices still asserts the palette stays inside the sixteen slots, and now
+    // it is a claim the hash function can actually be wrong about.
+    const expected: Record<string, number> = {
+      'Mira Vale': 9,
+      'Toko Senja': 2,
+      '+15550192834': 0,
+    };
+    for (const [id, index] of Object.entries(expected)) {
+      expect(colorIndexFor(id), `${id} keeps its palette slot`).toBe(index);
     }
+    // The loop above is also the determinism check: each id is compared against
+    // a pinned index, so a hash that drifted between calls would fail it.
   });
 
   it('gives different senders different colors in a small sample', () => {

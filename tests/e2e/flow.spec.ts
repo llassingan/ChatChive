@@ -158,12 +158,31 @@ test.describe('every shipped theme renders the flow', () => {
       await page.goto('/');
       await chooseFile(page, ZIP_FIXTURE);
 
+      // Establish that the theme actually applied before asserting anything
+      // about how it looks. Without this line the two assertions below are
+      // theme-invariant: measured, "7 messages" is visible and the overflow is 0
+      // with the theme applied, with the wrong theme, and with no `data-theme`
+      // at all, the state SPRINT-5.MD §4.4's H1 left behind, where a loop named
+      // "every shipped theme" ran against the default theme for two sprints
+      // while passing.
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+
       await expect(page.getByText('7 messages')).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
         ),
       ).toBeLessThanOrEqual(0);
+
+      // And the theme is visible, not merely set: the timestamp takes
+      // `--text-secondary`, whose three values (measured on the built app with
+      // `export.zip`) are all different. A loop that asserts only overflow and a
+      // message count cannot tell one theme from another; this can.
+      const secondary = { light: 'rgb(84, 100, 109)', classic: 'rgb(192, 206, 214)' }[theme];
+      expect(secondary, `no measured --text-secondary for theme ${theme}`).toBeDefined();
+      if (secondary) {
+        await expect(page.locator('.meta').first()).toHaveCSS('color', secondary);
+      }
     });
   }
 });

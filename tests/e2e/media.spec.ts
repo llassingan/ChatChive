@@ -24,6 +24,34 @@ const MEDIA_ZIP = 'tests/e2e/fixtures/media.zip';
 const TXT_ONLY = 'src/parser/fixtures/txt-only.txt';
 
 /**
+ * The per-theme values the media theme loop asserts, measured on the built app
+ * with `media.zip` and read back through `getComputedStyle`:
+ *
+ *   theme    meta + unplayed bar (--text-secondary)   played bar (--wave-played)
+ *   dark     rgba(255, 255, 255, 0.65)                rgb(83, 189, 235)
+ *   light    rgb(84, 100, 109)                        rgb(3, 105, 161)
+ *   classic  rgb(192, 206, 214)                       rgb(138, 214, 247)
+ *
+ * They exist because a loop named "every shipped theme" has to be able to fail
+ * when a theme does not apply (SPRINT-6-PLAN §5.5, and SPRINT-5.MD §4.4's H1,
+ * where three theme loops ran against the default theme for two sprints). Every
+ * value here is distinct across the three themes, which is what makes it a
+ * theme-specific assertion rather than a second copy of "the CSS resolved".
+ */
+const THEME_VALUES: Record<string, { meta: string; unplayed: string; played: string }> = {
+  dark: {
+    meta: 'rgba(255, 255, 255, 0.65)',
+    unplayed: 'rgba(255, 255, 255, 0.65)',
+    played: 'rgb(83, 189, 235)',
+  },
+  light: { meta: 'rgb(84, 100, 109)', unplayed: 'rgb(84, 100, 109)', played: 'rgb(3, 105, 161)' },
+  classic: {
+    meta: 'rgb(192, 206, 214)',
+    unplayed: 'rgb(192, 206, 214)',
+    played: 'rgb(138, 214, 247)',
+  },
+};
+/**
  * Median gap between animation frames, in ms, optionally while scrolling.
  * `perf.spec.ts` has the same helper for the 100k export; it is duplicated
  * deliberately, because neither spec is allowed to import the other's file.
@@ -89,6 +117,42 @@ async function waitReady(page: Page, selector: string): Promise<void> {
   // mode violation here.
   await expect(page.locator(`${selector}[data-state="ready"]`).first()).toBeVisible();
   await expect(page.locator(`${selector}[data-state="pending"]`)).toHaveCount(0);
+}
+
+/**
+ * Wait for the list's own geometry to stop moving. The virtualizer remeasures
+ * rows and the pin-to-newest burst rewrites `scrollTop` while the height is
+ * still changing after the chat mounts (`MessageList.tsx`: the burst ends once
+ * `scrollHeight` has held still, or after `PIN_FRAMES`), so a measurement taken
+ * in that window can belong to a layout that is already gone.
+ * Measured on WebKit with `media.zip`: `scrollTop` moved mid-read in 13 of 20
+ * trials and `scrollHeight` in 9 of 20. Two consecutive frames at the same
+ * position and height is the cheapest honest definition of "settled"; the frame
+ * cap keeps a genuinely moving list from hanging the test.
+ */
+async function waitForSettledList(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const list = document.querySelector<HTMLElement>('.chat-list');
+        if (!list) {
+          resolve();
+          return;
+        }
+        let previous = '';
+        let stable = 0;
+        let frames = 0;
+        const step = () => {
+          const current = `${list.scrollTop}:${list.scrollHeight}`;
+          stable = current === previous ? stable + 1 : 0;
+          previous = current;
+          frames += 1;
+          if (stable >= 2 || frames >= 240) resolve();
+          else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }),
+  );
 }
 
 test.describe('E5-2: image and video', () => {
@@ -161,17 +225,37 @@ test.describe('E5-2: image and video', () => {
     const bubble = page.locator('.bubble', { has: caption });
     await expect(bubble).not.toHaveClass(/bubble--meta-overlay/);
 
-    const [captionBox, metaBox] = await Promise.all([
-      caption.boundingBox(),
-      bubble.locator('.meta').boundingBox(),
-    ]);
-    expect(captionBox).not.toBeNull();
-    expect(metaBox).not.toBeNull();
-    if (captionBox && metaBox) {
+    // The list is still pinning and remeasuring rows for a burst of frames
+    // after mount, so wait for its geometry to stop moving before measuring.
+    // Without this the two boxes below can be read from two different layouts:
+    // measured on WebKit, `scrollTop` was still moving mid-read in 13 of 20
+    // trials (1772 -> 1893), and the shipped split read caught the caption and
+    // the meta 31px apart where an atomic read of one instant put them 15px
+    // apart. That is the shape that reached -111 and failed this test 1 run in
+    // 20 while the layout it was asserting was correct.
+    await waitForSettledList(page);
+
+    // Both boxes from ONE layout, in ONE round trip: two `boundingBox()` calls
+    // are two messages to the browser, and two chances to observe a different
+    // frame.
+    const measured = await bubble.evaluate((node) => {
+      const leaf = [...node.querySelectorAll('*')].find(
+        (child) => child.children.length === 0 && child.textContent?.includes('Späti an der Ecke'),
+      );
+      const meta = node.querySelector('.meta');
+      if (!leaf || !meta) return null;
+      const captionBox = leaf.getBoundingClientRect();
+      const metaBox = meta.getBoundingClientRect();
+      return {
+        overlap: captionBox.y + captionBox.height - metaBox.y,
+        metaRightOfCaption: metaBox.x > captionBox.x,
+      };
+    });
+    expect(measured, 'the caption and the meta are both rendered').not.toBeNull();
+    if (measured) {
       // Same line box: vertical overlap, and the meta to the right of the text.
-      const overlap = captionBox.y + captionBox.height - metaBox.y;
-      expect(overlap).toBeGreaterThan(0);
-      expect(metaBox.x).toBeGreaterThan(captionBox.x);
+      expect(measured.overlap).toBeGreaterThan(0);
+      expect(measured.metaRightOfCaption).toBe(true);
     }
 
     expect(errors).toEqual([]);
@@ -687,6 +771,16 @@ test.describe('gate evidence', () => {
         await importMediaZip(page);
         await waitReady(page, '.media-frame--image');
 
+        // Establish the cause before asserting any effect of it (SPRINT-5.MD
+        // §4.4 H1, where three loops wrote a theme and never read one back). A
+        // `data-theme` that never landed is exactly the failure this loop
+        // exists to catch, so it is asserted first, against the value this run
+        // asked for.
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        const expected = THEME_VALUES[theme];
+        expect(expected, `no measured values recorded for theme ${theme}`).toBeDefined();
+        if (!expected) return;
+
         // The scrim is the same flat 0.6 in every theme: a white photo under
         // white 12px text is a contrast question, not a theme question.
         const background = await page
@@ -703,21 +797,29 @@ test.describe('gate evidence', () => {
         expect(tileBackground).toBe('rgb(192, 57, 43)');
 
         // The player's bars read the per-theme tokens: an unplayed bar takes
-        // `--text-secondary` and a played one the new `--wave-played` (plan
-        // §4.1). A note at rest shows no played bars, so play it first: the
-        // assertion is on a rendered bar, not on a token lookup.
+        // `--text-secondary` and a played one `--wave-played` (plan §4.1). A
+        // note at rest shows no played bars, so play it first: the assertion is
+        // on a rendered bar, not on a token lookup. Both values are named
+        // exactly, in this theme's own colours, because "not transparent" and
+        // "different from each other" are true in every theme including the one
+        // that never applied (measured: all four of these assertions passed
+        // with no `data-theme` at all, which is what made this loop vacuous).
         const unplayed = await page
           .locator('.voice__bar[data-played="false"]')
           .first()
           .evaluate((node) => getComputedStyle(node).backgroundColor);
-        expect(unplayed).not.toBe('rgba(0, 0, 0, 0)');
+        expect(unplayed).toBe(expected.unplayed);
 
         await page.locator('.voice__toggle').first().click();
         const playedBar = page.locator('.voice__bar[data-played="true"]').first();
         await expect(playedBar).toBeVisible();
         const played = await playedBar.evaluate((node) => getComputedStyle(node).backgroundColor);
-        expect(played).not.toBe(unplayed);
-        expect(played).not.toBe('rgba(0, 0, 0, 0)');
+        expect(played).toBe(expected.played);
+
+        // The meta's colour is `--text-secondary` too, and it is the theme's
+        // most visible token on the row this loop is about.
+        await expect(page.locator('.meta').first()).toHaveCSS('color', expected.meta);
+
         expect(errors).toEqual([]);
       });
     }
