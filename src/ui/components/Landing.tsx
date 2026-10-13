@@ -6,6 +6,7 @@
  * clickable and keyboard activation is the input's own behaviour.
  */
 import { useState, type DragEvent } from 'react';
+import { Mark } from '../brand/Mark.tsx';
 import { Icon } from '../icons/index.ts';
 import { Dialog } from './Dialog.tsx';
 import { ExportHelp } from './ExportHelp.tsx';
@@ -37,7 +38,7 @@ export function Landing({ onFile }: LandingProps) {
     <main className="landing">
       <h1 className="landing__brand">
         <span className="landing__mark" aria-hidden="true">
-          <Icon name="send" size={20} />
+          <Mark size={20} />
         </span>
         <span className="landing__wordmark">ChatChive</span>
       </h1>
