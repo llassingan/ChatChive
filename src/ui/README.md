@@ -103,9 +103,13 @@ Referrer-Policy: no-referrer
 X-Content-Type-Options: nosniff
 ```
 
-On Cloudflare Pages / Netlify this goes in a `_headers` file; on GitHub Pages (no custom
-headers) front it with a worker/proxy or document the limitation. This is a deploy-story
-(E1-4) task; it is recorded here so it is not lost.
+This ships as `public/_headers`, which Vite copies verbatim into `dist/` at build
+time, so Cloudflare Pages (the E1-4 target, chosen because it honours response
+headers) reads it from the publish directory. `.github/workflows/deploy.yml`
+uploads `dist/`; the deploy itself is unverified until the owner wires a host.
+GitHub Pages cannot set response headers, so it would drop this policy entirely,
+including the `frame-ancestors` guard, and is documented in the README rather
+than pretended away.
 
 ## Accessibility: contrast log (R-25)
 

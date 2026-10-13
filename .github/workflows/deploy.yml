@@ -1,0 +1,149 @@
+name: Deploy
+
+# Static deploy to Cloudflare Pages (backlog E1-4). The build output in `dist/`
+# is uploaded as-is; Cloudflare Pages reads `dist/_headers` (authored in
+# `public/_headers`) and serves the CSP mirror as real response headers, which
+# is the reason this project targets Pages rather than GitHub Pages. GitHub
+# Pages cannot set response headers at all, so it cannot deliver the policy
+# `src/ui/README.md` specifies.
+#
+# The workflow is inert until the owner configures it. With no Cloudflare
+# project, no remote, and no credentials, a deploy job that failed on every push
+# would only train the owner to ignore a red X, so the job reports that deploy
+# is not configured and exits 0 instead. Configure three repository values and
+# the same jobs deploy with no edits to this file:
+#
+#   Secret    CLOUDFLARE_API_TOKEN      Account > Cloudflare Pages > Edit
+#   Secret    CLOUDFLARE_ACCOUNT_ID     the account ID from the dashboard
+#   Variable  CLOUDFLARE_PAGES_PROJECT  the Pages project name
+#
+# The live deploy is unverified: nothing here has run against a real Cloudflare
+# project, because none exists yet.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Lets the action attach the deployment and its alias URL to the commit or
+  # pull request, which is what makes the Cloudflare preview link clickable in
+  # the GitHub UI. The upload itself does not depend on it.
+  deployments: write
+
+jobs:
+  # Production: push to main, or a manual run. Never a pull request.
+  deploy:
+    name: Deploy to Cloudflare Pages
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # A deploy race is a real hazard on a busy main branch; queue rather than
+    # cancel, so a superseded push still lands before the next one starts.
+    concurrency:
+      group: pages-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      # One gate for every configuration value, so a half-configured repository
+      # is skipped rather than half-deployed.
+      - name: Check deploy configuration
+        id: config
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_PROJECT" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy is not configured
+        if: steps.config.outputs.configured != 'true'
+        run: |
+          echo "::notice title=Deploy not configured::Skipping deploy. Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets and the CLOUDFLARE_PAGES_PROJECT variable to enable it (README, Deploy)."
+
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.configured == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.config.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.config.outputs.configured == 'true'
+        run: npm run build
+
+      - name: Upload to Pages
+        if: steps.config.outputs.configured == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
+
+  # Preview: a branch deploy per pull request, which Cloudflare publishes as
+  # pr-<number>.<project>.pages.dev without touching production. Secrets are not
+  # available to pull requests from forks, so those runs take the skip path and
+  # stay green: an untrusted PR cannot deploy, and does not go red for it.
+  preview:
+    name: Preview deploy (pull request)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages-preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check deploy configuration
+        id: config
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+        run: |
+          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_PROJECT" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preview deploy is not configured
+        if: steps.config.outputs.configured != 'true'
+        run: |
+          echo "::notice title=Preview deploy not configured::Skipping the preview deploy. Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets and the CLOUDFLARE_PAGES_PROJECT variable to enable it (README, Deploy)."
+
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.configured == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        if: steps.config.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Build
+        if: steps.config.outputs.configured == 'true'
+        run: npm run build
+
+      - name: Upload preview to Pages
+        if: steps.config.outputs.configured == 'true'
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The branch label is the pull request number, not the head branch
+          # name. A ref name can legally contain `$`, backticks and other shell
+          # metacharacters, and it would be interpolated into this command; a PR
+          # number is an integer. It also keeps one stable preview URL per pull
+          # request instead of a new one after every branch rename.
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=pr-${{ github.event.pull_request.number }}

@@ -1,0 +1,67 @@
+name: Unsupported export format
+description: A WhatsApp export this viewer cannot read, or reads wrongly.
+title: '[Format] '
+labels: ['format-unsupported']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Exports from real phones are how new formats and locales get
+        supported.
+
+        Before you paste anything, redact it: replace names, phone numbers and message text
+        with placeholders. Keep the shape of the lines (date, time, separator, and the words
+        around the message), because that shape is what identifies the format.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which phone produced the export?
+      options:
+        - Android
+        - iOS
+    validations:
+      required: true
+  - type: input
+    id: whatsapp-version
+    attributes:
+      label: WhatsApp version
+      description: The version WhatsApp reports in its settings, if you can find it.
+      placeholder: 'Example: 2.25.1.75'
+    validations:
+      required: false
+  - type: input
+    id: locale
+    attributes:
+      label: Language and date style
+      description: The phone's language and region, and how times appear.
+      placeholder: 'Example: English (India), 24-hour clock'
+    validations:
+      required: false
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Anonymized snippet
+      description: A few lines copied from the exported .txt file, with names, numbers and message
+        text replaced by placeholders.
+      render: text
+      placeholder: |
+        12/07/2026, 09.41 - Sender One: message text
+        12/07/2026, 09.42 - Sender Two: message text
+    validations:
+      required: true
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What the app does with it
+      description: What you see instead of the chat (an error, a wrong date, lines shown as plain
+        text).
+    validations:
+      required: false
+  - type: checkboxes
+    id: redacted
+    attributes:
+      label: Redaction
+      options:
+        - label: I replaced every name, phone number and message text before pasting.
+          required: true

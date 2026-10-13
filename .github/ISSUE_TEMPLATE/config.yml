@@ -1,0 +1,7 @@
+# Issue template chooser (backlog E1-5).
+#
+# One template exists today, so `blank_issues_enabled: true` stays on: forcing a
+# bug report through the format template would mislabel it. Add the other
+# templates to this list as they land.
+blank_issues_enabled: true
+contact_links: []
