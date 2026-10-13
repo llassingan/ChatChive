@@ -12,6 +12,14 @@ coverage/
 playwright-report/
 test-results/
 
+# Visual baselines: only the `-linux` set is committed, because CI runs
+# `ubuntu-latest` and Playwright's default snapshot path carries the platform
+# (SPRINT-6-PLAN §3.3). A laptop that runs `--update-snapshots` writes
+# `-darwin`/`-win32` files CI can never match, so they stay out of the tree.
+# Scoped to the snapshot folder so nothing else here is affected.
+tests/e2e/visual.spec.ts-snapshots/*-darwin.png
+tests/e2e/visual.spec.ts-snapshots/*-win32.png
+
 # Editor / OS
 .DS_Store
 .idea/
