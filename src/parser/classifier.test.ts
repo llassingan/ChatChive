@@ -163,6 +163,11 @@ describe('classifyMessages: attachments', () => {
     expect(message).toMatchObject({ media: { mimeType: 'application/pdf' } });
   });
 
+  it('maps .webm to video/webm, which the media row plays', () => {
+    const [message] = classify('6/2/26, 21:36 - A: VID-20260703-WA0004.webm (file attached)');
+    expect(message).toMatchObject({ media: { mimeType: 'video/webm' } });
+  });
+
   it('falls back to octet-stream for an unknown extension', () => {
     const [message] = classify('6/2/26, 21:36 - A: mystery.xyz (file attached)');
     expect(message).toMatchObject({ media: { mimeType: 'application/octet-stream' } });

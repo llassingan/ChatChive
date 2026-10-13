@@ -74,6 +74,7 @@ const MIME_BY_EXT: Record<string, string> = {
   mov: 'video/quicktime',
   '3gp': 'video/3gpp',
   mkv: 'video/x-matroska',
+  webm: 'video/webm',
   opus: 'audio/ogg',
   ogg: 'audio/ogg',
   mp3: 'audio/mpeg',
