@@ -1,0 +1,287 @@
+/*
+  Media bodies (E5-2, E5-3, E5-4, E5-6, E5-7). DESIGN.md §3.7, §3.8, §3.12, §3.15.
+
+  The bubble-level integration (which bubble loses its fill, where the meta
+  floats) is in MessageRow.css; what is here is the file itself: the reserved
+  frame, the video overlay, the sticker, the voice player, the document tile and
+  the two "cannot show" tiles.
+
+  No motion is declared in this file. MOTION is 1 and the loading state is a
+  static `--card-inner` box at the reserved size, not a shimmer (plan §3.4), so
+  there is no `@keyframes` and no `transition` to find here.
+
+  The four document tile colors are local values rather than tokens: exactly one
+  rule set uses them, which is the same argument the project already accepts for
+  `--bg-rail`. The PDF value is not DESIGN §3.15's `#E2574C`, which measures
+  3.68:1 for white 10px 700 on it and fails AA; it is `#C0392B` at 5.44:1. The
+  other three are DESIGN's own and pass unchanged (plan §4.2).
+*/
+
+/* ---- Reserved frame: image, video, GIF, and the pending box ----
+   Space is reserved before the bytes arrive so nothing moves when they land
+   (§3.4). The frame is the bubble's inner width and the height is clamped to
+   100-440px, which is what turns the 200x1500 fixture into a 440px crop. */
+.media-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-height: 440px;
+  min-height: 100px;
+  margin: var(--space-1) 0;
+  border-radius: var(--radius-media);
+  background: var(--card-inner);
+  overflow: hidden;
+}
+
+.media-frame--image,
+.media-frame--video {
+  /* `aspect-ratio` is set inline: 4/3 until the element reports its real one. */
+  height: auto;
+}
+
+.media-frame img,
+.media-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 440px;
+  object-fit: cover;
+}
+
+/* The pending box: the same reserved rectangle, empty, and static on purpose
+   (the `data-state` attribute is the only signal, and the spec asserts it). A
+   visual carries an inline `aspect-ratio`; a kind that has no ratio to reserve
+   reserves a height here instead, so the row does not jump when the real body
+   replaces it. */
+.media-frame--pending[data-kind='voice'],
+.media-frame--pending[data-kind='audio'],
+.media-frame--pending[data-kind='document'] {
+  min-height: 48px;
+}
+
+/* ---- Video overlay play control (E5-2) ----
+   A real button with a real effect: it starts the video and hands over to the
+   native controls. It is 40px so it clears the 44px-ish touch guidance once the
+   bubble's own padding is counted, and it carries an `aria-label`. */
+.media-frame__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+}
+
+.media-frame__play:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+/* ---- Sticker (E5-3) ----
+   No bubble fill, capped size, nothing to control. 160px on mobile, 190px on
+   web (DESIGN §3.8); the "no fill" half is the bubble rule in MessageRow.css. */
+.sticker {
+  display: block;
+  margin: var(--space-1) 0;
+}
+
+.sticker img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 160px;
+  max-height: 160px;
+}
+
+@media (min-width: 768px) {
+  .sticker img {
+    max-width: 190px;
+    max-height: 190px;
+  }
+}
+
+/* ---- Voice note and audio (E5-4) ----
+   Fixed-ish width so the waveform does not resize with its content: 300px on
+   mobile, 300-340px on web (DESIGN §3.12). Play button, 45 bars, then a row
+   with the elapsed time at the start and the meta at the end. */
+.voice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'toggle wave elapsed'
+    'meta meta meta';
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  width: 268px;
+  padding: var(--space-1) 0;
+}
+
+@media (min-width: 768px) {
+  .voice {
+    width: 300px;
+  }
+}
+
+.voice__toggle {
+  grid-area: toggle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  /* DESIGN §3.12's `rgba(255,255,255,0.6)` assumes a dark bubble and fails on
+     the light theme's, so the control takes the bubble's own text color: it
+     clears AA in all three themes by construction. */
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.voice__wave {
+  position: relative;
+  grid-area: wave;
+  display: block;
+  height: 28px;
+}
+
+/* The bars are presentation and `aria-hidden`: the seek slider underneath is the
+   control and it carries the `aria-valuetext` (plan §4.6). */
+.voice__bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.voice__bar {
+  flex: 1 1 3px;
+  min-width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--text-secondary);
+}
+
+.voice__bar[data-played='true'] {
+  background: var(--wave-played);
+}
+
+/* The playhead. It sits at the played/unplayed boundary, which is what keeps the
+   split from being color-only (WCAG 1.4.1). */
+.voice__knob {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: var(--wave-played);
+}
+
+/* A real slider, layered transparently over the bars so arrow keys, focus and
+   the focus ring are inherited rather than hand-rolled (plan §4.6). */
+.voice__seek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Keep the focus ring visible even though the control itself is transparent: an
+   `opacity: 0` element takes its own outline with it, so the ring is drawn on
+   the wrapper instead, in the same place a keyboard reader expects it. */
+.voice__wave:has(.voice__seek:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 4px;
+}
+
+.voice__elapsed {
+  grid-area: elapsed;
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Document tile (E5-6) ----
+   The existing `--card-inner` row extended with a 40x48 file-type tile, the
+   filename, `EXT · size` and the download control. */
+.media--document {
+  align-items: center;
+}
+
+.doc-tile {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 48px;
+  border-radius: var(--radius-quote);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Measured pairs for white 10px 700 on each tile (plan §4.2):
+   pdf #c0392b 5.44:1, doc #2a5699 7.27:1, xls #1e7145 5.99:1, other #5f6368 6.05:1. */
+.doc-tile[data-tone='pdf'] {
+  background: #c0392b;
+}
+
+.doc-tile[data-tone='doc'] {
+  background: #2a5699;
+}
+
+.doc-tile[data-tone='xls'] {
+  background: #1e7145;
+}
+
+.doc-tile[data-tone='other'] {
+  background: #5f6368;
+}
+
+/* The download control: 32px square so it is a real target, labelled for a
+   screen reader, and the only control inside the document tile. */
+.media__download {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border-radius: 50%;
+  color: var(--text-secondary);
+}
+
+.media__download:hover {
+  color: var(--text-primary);
+}
+
+/* ---- The two "cannot show" tiles (E5-7, E5-4, E5-2) ----
+   `--missing` (nothing in the archive) is the existing dashed tile with no
+   control; `--broken` (bytes in hand, will not decode) gets the filled row and
+   the Download link. Both are the same box so a row does not change height
+   between the two states. */
+.media--broken {
+  /* Inherits `.media`'s `--card-inner` fill: bytes exist, so this is a file row
+     rather than an absence. */
+  min-height: 48px;
+}

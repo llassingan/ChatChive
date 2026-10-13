@@ -84,6 +84,12 @@
      4.59:1 on --bubble-out, 7.13:1 on --bubble-in. Links also carry an
      underline, so color is never the only signal (WCAG 1.4.1). */
   --link: #53bdeb;
+  /* Played waveform bars in the voice player (E5-4). Same value as --link in
+     this theme and measured for this role: 4.59:1 on --bubble-out, 7.13:1 on
+     --bubble-in. Unplayed bars reuse --text-secondary (5.17:1), so the bar
+     colors differ by hue and lightness at once, and the playhead knob plus the
+     elapsed clock carry the split without relying on color (WCAG 1.4.1). */
+  --wave-played: #53bdeb;
 
   /* Bubble elevation: none in dark mode (DESIGN §1.4). Floating buttons only. */
   --shadow-bubble: none;
@@ -310,6 +316,9 @@
      4.07:1 on --bubble-out #D9FDD3, a fail at body size; this is the same hue
      family darkened to clear it: 5.35:1 on --bubble-out, 5.93:1 on --bubble-in. */
   --link: #0369a1;
+  /* Played waveform bars (E5-4): 5.35:1 on --bubble-out #D9FDD3, 5.93:1 on
+     --bubble-in #FFFFFF. Unplayed bars are --text-secondary (5.54:1). */
+  --wave-played: #0369a1;
 
   --pill-bg: #ffffff;
   --fab-bg: #ffffff;
@@ -393,6 +402,11 @@
      than dark's, so it needs a lighter blue than --tick-read: 4.95:1 on
      --bubble-out, 8.88:1 on --bubble-in. */
   --link: #8ad6f7;
+  /* Played waveform bars (E5-4). Classic's bubbles are darker than light's but
+     lighter than dark's, so this is a step lighter than --link: 4.95:1 on
+     --bubble-out #005C4B, 8.88:1 on --bubble-in #202C33. Unplayed bars are
+     --text-secondary (4.95:1). */
+  --wave-played: #8ad6f7;
 
   --pill-bg: #182229;
   --fab-bg: #202c33;

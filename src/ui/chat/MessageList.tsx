@@ -10,8 +10,10 @@
  * margin is in the DOM, so memory and paint cost stay flat as the chat grows.
  */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Chat } from '../../types/chat.ts';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import type { ChatSession } from '../../parser/client.ts';
+import type { Chat, MediaMessage } from '../../types/chat.ts';
+import { createMediaStore } from '../media/store.ts';
 import { formatText } from '../formatText.ts';
 import { Icon } from '../icons/index.ts';
 import {
@@ -28,6 +30,13 @@ import './MessageList.css';
 
 export interface MessageListProps {
   chat: Chat;
+  /**
+   * The live parse session, so the media store can extract bytes on demand
+   * (E5-1). The chat state keeps it open for as long as the view is mounted
+   * (§2.4); it is nullable so a test or a future host without a worker can
+   * still render the list, in which case every media row shows its placeholder.
+   */
+  session: ChatSession | null;
 }
 
 /**
@@ -59,7 +68,7 @@ const PIN_FRAMES = 30;
  * the answer instead of ~8us for a tokenization whose result it cannot use.
  */
 function estimateRow(row: MessageRow['message']): number {
-  if (row.kind === 'media') return 150;
+  if (row.kind === 'media') return estimateMedia(row);
   if (row.kind === 'call') return 84;
   if (row.kind === 'empty' || row.kind === 'deleted') return 44;
   const lines = row.kind === 'text' ? row.text.split('\n').length : 1;
@@ -78,14 +87,55 @@ function estimateRow(row: MessageRow['message']): number {
   return 30 + lines * 22 + extra * 14;
 }
 
+/**
+ * Seed height for a media row (E5 §4.4). The kind decides the box, and a
+ * caption adds one line: a flat 150 for every media row under-seeds an image by
+ * more than a hundred pixels, and the bottom pin only runs for `PIN_FRAMES`, so
+ * a bad seed leaves the first paint short. Values are seeds, not truth; the
+ * virtualizer adjusts the scroll offset when a measured row differs (§4.4).
+ */
+function estimateMedia(row: MediaMessage): number {
+  const { media } = row;
+  if (!media.resolved) return 88;
+  switch (media.kind) {
+    case 'image':
+    case 'video':
+    case 'gif':
+      // A 4:3 box about 300px wide inside the bubble's padding (7+8), and one
+      // 22px caption line plus its margin when the message carries a caption.
+      return row.caption ? 292 : 262;
+    case 'sticker':
+      // The 160px cap plus the pill row.
+      return 190;
+    case 'voice':
+    case 'audio':
+      // Two 22px rows of player content plus the bubble's padding.
+      return 78;
+    case 'document':
+      // A 48px tile plus padding and the meta line.
+      return 88;
+    default:
+      // contact/location: their bodies do not change this sprint.
+      return 150;
+  }
+}
+
 function estimateOf(row: ChatRow): number {
   return row.type === 'day' ? 52 : estimateRow(row.message);
 }
 
-export function MessageList({ chat }: MessageListProps) {
+export function MessageList({ chat, session }: MessageListProps) {
   const rows = useMemo(() => buildRows(chat), [chat]);
   const dayLabels = useMemo(() => dayLabelByIndex(rows), [rows]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // One store for the mounted chat (E5-1). `session` is a live object with
+  // methods, so it is created once per session and never per render (§2.4).
+  const store = useMemo(() => createMediaStore(session), [session]);
+  // The version counter is the snapshot: it changes only when an entry did, so
+  // React re-renders the list once per landed file, not once per request.
+  useSyncExternalStore(store.subscribe, store.getVersion);
+  useEffect(() => () => store.dispose(), [store]);
 
   const count = rows.length;
   const virtualizer = useVirtualizer({
@@ -196,6 +246,27 @@ export function MessageList({ chat }: MessageListProps) {
     scrollFrame.current = frame;
   }, [virtualizer, dayLabels, touchPill]);
 
+  // Visibility drives extraction (E5-1). The mounted window is the visible rows
+  // plus `overscan: 8`, which is E5-1's "within one screen of view". No
+  // IntersectionObserver: the list is already virtualized and jsdom does not
+  // implement it (the same ruling as Sprint 4's `matchMedia`).
+  //
+  // Deliberately no dependency array: the effect has to see the current window
+  // after every render, and re-renders here are bounded by the same scroll
+  // throttle the rest of the list uses. `request` is idempotent and a `Map`
+  // lookup, so a redundant pass costs one comparison per mounted row and no
+  // work; the alternative, a dependency on the item list, would allocate a new
+  // array every frame for the same answer.
+  useEffect(() => {
+    for (const item of virtualizer.getVirtualItems()) {
+      const row = rows[item.index];
+      if (row.type !== 'message' || row.message.kind !== 'media') continue;
+      const { media } = row.message;
+      // A reference the archive does not contain is never requested: there is
+      // nothing to extract, and the row renders the placeholder (§2.5).
+      if (media.resolved) store.request(media);
+    }
+  });
   // Cancel a pending pass and pill timer on unmount so neither touches a gone node.
   useEffect(() => {
     return () => {
@@ -231,10 +302,16 @@ export function MessageList({ chat }: MessageListProps) {
             <span className="day__pill">{activeDay}</span>
           </div>
         ) : null}
-
         <div className="chat-list__sizer" style={{ height: totalSize }}>
           {virtualizer.getVirtualItems().map((item) => {
             const row = rows[item.index];
+            // Media is read here, during render: `get` returns the same object
+            // until that entry's status changes, so a row re-renders when its
+            // own media lands and never when a neighbour's does (§2.5).
+            const mediaEntry =
+              row.type === 'message' && row.message.kind === 'media'
+                ? store.get(row.message.media.entryName)
+                : null;
             return (
               <div
                 key={row.key}
@@ -255,6 +332,7 @@ export function MessageList({ chat }: MessageListProps) {
                     showSender={chat.meta.isGroup && row.firstOfRun && !row.message.outgoing}
                     firstOfRun={row.firstOfRun}
                     lastOfRun={row.lastOfRun}
+                    mediaEntry={mediaEntry}
                   />
                 )}
               </div>

@@ -2,6 +2,12 @@
  * Import flow: one state machine over `openChatFile()` (E3-1, E3-2, and the
  * E3-3 date prompt pulled forward). It owns the session so Cancel can terminate
  * the worker and free the archive at any point.
+ *
+ * Since E5 the session also outlives the parse: media rows inflate one entry at
+ * a time with `session.extract()`, so the session is handed to the chat view in
+ * state and the archive stays resident until the chat is closed (F-NAV-6, plan
+ * §2.4). The close paths are still exactly two, both here: `cancel()` and the
+ * unmount effect.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { openChatFile, type ChatSession } from '../../parser/client.ts';
@@ -11,7 +17,7 @@ export type ImportState =
   | { status: 'landing' }
   | { status: 'working'; file: File; phase: ParsePhase; fraction: number | undefined }
   | { status: 'choice'; file: File; samples: Array<{ raw: string; asDMY: string; asMDY: string }> }
-  | { status: 'chat'; file: File; chat: Chat }
+  | { status: 'chat'; file: File; chat: Chat; session: ChatSession }
   | { status: 'error'; error: ParseError };
 
 /** Phases in the order the pipeline reports them; `ready` is the last one. */
@@ -78,13 +84,11 @@ export function useImportFlow(): ImportFlow {
         if (sessionRef.current !== session) return;
 
         if (result.ok) {
-          // The chat view renders from the parsed `Chat` and does not read media
-          // bytes yet (E5 lands next sprint), so releasing the archive now keeps
-          // memory flat (F-NAV-6). `file` stays in state so E5 can reopen a
-          // session and call `extract()` lazily.
-          session.close();
-          sessionRef.current = null;
-          setState({ status: 'chat', file, chat: result.chat });
+          // The session stays open for the whole chat view: E5's rows call
+          // `extract(entryName)` on it lazily, which is a live worker round
+          // trip. `sessionRef.current` keeps pointing at it, so `cancel()` and
+          // the unmount effect remain the two close paths (plan §2.4).
+          setState({ status: 'chat', file, chat: result.chat, session });
           return;
         }
 

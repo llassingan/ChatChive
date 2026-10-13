@@ -11,6 +11,7 @@
  * arrival only for a group, where the parser has no signal to guess from.
  */
 import { useMemo, useRef, useState } from 'react';
+import type { ChatSession } from '../../parser/client.ts';
 import { alignToMe, needsMeChoice } from '../../parser/me.ts';
 import type { Chat } from '../../types/chat.ts';
 import { formatDateRange } from '../format.ts';
@@ -23,6 +24,12 @@ import './ChatView.css';
 
 export interface ChatViewProps {
   chat: Chat;
+  /**
+   * The live parse session, passed straight through to the list so media rows
+   * can extract their bytes on demand (E5-1, plan §2.4). Nullable: a host with
+   * no archive (a test) renders every media row as a placeholder.
+   */
+  session: ChatSession | null;
   /** Back to the chat list / landing page (F-RES-1). */
   onClose: () => void;
   /**
@@ -44,7 +51,7 @@ export interface ChatViewProps {
   pane: boolean;
 }
 
-export function ChatView({ chat, onClose, pane }: ChatViewProps) {
+export function ChatView({ chat, session, onClose, pane }: ChatViewProps) {
   // The chosen "me", or null for "Nobody". Seeded from the parser's guess.
   const [meId, setMeId] = useState<string | null>(chat.guessedMeId);
   const [answered, setAnswered] = useState(!needsMeChoice(chat));
@@ -123,7 +130,7 @@ export function ChatView({ chat, onClose, pane }: ChatViewProps) {
         </details>
       </header>
 
-      <MessageList chat={aligned} />
+      <MessageList chat={aligned} session={session} />
 
       {/* Read-only footer replacing the composer (F-RES-5). Every value is real
           and read from the export; nothing here pretends to send a message. */}

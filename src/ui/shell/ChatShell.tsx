@@ -12,6 +12,7 @@
  * (`useHistoryBack`, §3.4) and passes one `onClose` to both columns, so the
  * panel row, the header Back button and "Close chat" share a single close path.
  */
+import type { ChatSession } from '../../parser/client.ts';
 import type { Chat } from '../../types/chat.ts';
 import { useHistoryBack } from '../import/useHistoryBack.ts';
 import { ChatView } from '../chat/ChatView.tsx';
@@ -20,11 +21,17 @@ import './ChatShell.css';
 
 export interface ChatShellProps {
   chat: Chat;
+  /**
+   * The live parse session, handed down to the message list so media is
+   * extracted lazily while the chat is open (E5-1, plan §2.4). The shell is the
+   * only render site, so the prop is required and may only be null in a test.
+   */
+  session: ChatSession | null;
   /** Panel and pane share one close path (the browser back button included). */
   onClose: () => void;
 }
 
-export function ChatShell({ chat, onClose }: ChatShellProps) {
+export function ChatShell({ chat, session, onClose }: ChatShellProps) {
   const { close } = useHistoryBack(onClose);
 
   return (
@@ -37,7 +44,7 @@ export function ChatShell({ chat, onClose }: ChatShellProps) {
             the header and footer keep their own surfaces, as DESIGN §2.2 draws
             them. */}
         <div className="chat-shell__wallpaper" aria-hidden="true" />
-        <ChatView chat={chat} onClose={close} pane />
+        <ChatView chat={chat} session={session} onClose={close} pane />
       </div>
     </div>
   );

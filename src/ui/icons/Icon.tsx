@@ -28,7 +28,10 @@ export type IconName =
   | 'mic'
   | 'pin'
   | 'person'
-  | 'people';
+  | 'people'
+  | 'play'
+  | 'pause'
+  | 'download';
 
 const PATHS: Record<IconName, string> = {
   'chevron-left': 'M15 5 8 12l7 7',
@@ -55,6 +58,11 @@ const PATHS: Record<IconName, string> = {
   person: 'M12 3.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4.5 20.5c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6',
   people:
     'M9 11a3.2 3.2 0 1 0 0-6.4A3.2 3.2 0 0 0 9 11ZM2.5 20c0-3.2 2.9-5.4 6.5-5.4s6.5 2.2 6.5 5.4M16 5.2a3.2 3.2 0 0 1 0 6M17.5 14.9c2.4.5 4 2.2 4 5.1',
+  // Media controls (E5-2, E5-4): play/pause for the video overlay and the voice
+  // player, download for a document and for a file whose bytes will not decode.
+  play: 'M8.5 5.2v13.6l10.5-6.8-10.5-6.8Z',
+  pause: 'M9.5 5v14M14.5 5v14',
+  download: 'M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 20.5h15',
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

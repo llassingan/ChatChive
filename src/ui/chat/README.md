@@ -4,14 +4,22 @@ The message view (backlog E4). It consumes a parsed `Chat` from the import flow
 and renders bubbles, runs, avatars and date separators. Owned by the frontend
 track.
 
-| File              | What                                                                                    | Requirement            |
-| ----------------- | --------------------------------------------------------------------------------------- | ---------------------- |
-| `layout.ts`       | Pure pass that turns `Chat.messages` into flat rows with run/day flags                  | E4-2, E4-3, E4-5       |
-| `ChatView.tsx`    | Screen shell: header (back, avatar, title, menu), message list, read-only footer        | E4-1, E3-4, F-RES-5    |
-| `MessageList.tsx` | Virtualized list, opens at the newest message, scroll-to-bottom button, sticky day pill | E4-1, F-VIEW-13, E4-5  |
-| `MessageRow.tsx`  | One row: bubble, meta, tail, sender header, avatar, or a system/empty/deleted row       | E4-2, E4-3, E4-4, E4-7 |
-| `MePicker.tsx`    | "Which one is you?", reusing the shared `Dialog`                                        | E3-4, F-NAV-1          |
-| `Tail.tsx`        | The bubble swoosh (mobile, bottom) and nub (web, top) from `DESIGN.md` §3.2             | E4-3                   |
+| File                      | What                                                                                                                                                               | Requirement                |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `layout.ts`               | Pure pass that turns `Chat.messages` into flat rows with run/day flags                                                                                             | E4-2, E4-3, E4-5           |
+| `ChatView.tsx`            | Screen shell: header (back, avatar, title, menu), message list, read-only footer                                                                                   | E4-1, E3-4, F-RES-5        |
+| `MessageRow.tsx`          | One row: bubble, meta, tail, sender header, avatar, or a system/empty/deleted row; **dispatches media by kind and store status**, and draws a location's maps link | E4-2, E4-3, E4-4, E4-7, E5 |
+| `mediaMeta.ts`            | The kind → icon and label map, shared by the bubble and the shell preview                                                                                          | E4-7, F-VIEW-12            |
+| `media/ImageBody.tsx`     | Image and GIF: reserved 4:3 frame, ratio from `naturalWidth / naturalHeight`, height clamp                                                                         | E5-2                       |
+| `media/VideoBody.tsx`     | Video: overlay play button, then the native controls; refuses a codec the engine can't demux                                                                       | E5-2                       |
+| `media/StickerBody.tsx`   | Sticker: capped image, no bubble (the bubble rule lives in `MessageRow.css`)                                                                                       | E5-3                       |
+| `media/VoiceBody.tsx`     | Voice and audio: play/pause, seek slider, elapsed/total, 45 uniform bars                                                                                           | E5-4                       |
+| `media/DocumentBody.tsx`  | Document: file-type tile, filename, `EXT · size`, download                                                                                                         | E5-6                       |
+| `media/MediaFallback.tsx` | The shared "cannot show" tiles and the static pending box                                                                                                          | E5-7, E5-4                 |
+| `media/media.css`         | The bodies' CSS, including the four local document-tile colors                                                                                                     | E5-2, E5-4, E5-6           |
+| `media/shape.ts`          | `MediaShape`: what a body painted, so the row knows whether a scrim exists                                                                                         | E5-7                       |
+| `MePicker.tsx`            | "Which one is you?", reusing the shared `Dialog`                                                                                                                   | E3-4, F-NAV-1              |
+| `Tail.tsx`                | The bubble swoosh (mobile, bottom) and nub (web, top) from `DESIGN.md` §3.2                                                                                        | E4-3                       |
 
 ## Why the layout is a separate pure module
 
@@ -62,20 +70,72 @@ the other person, so the guess is applied without asking; a group has no such
 signal, so the picker opens on arrival. "Change who you are" in the header menu
 reopens it.
 
+## Media (E5)
+
+The store is created once by `MessageList` (`useMemo` on the session) and the
+list subscribes to it with `useSyncExternalStore`; the mounted window plus
+`overscan: 8` is what asks for extraction, in an effect with no dependency array
+whose body is a `Map` lookup per mounted row. A row reads its own entry during
+render and passes it down as `mediaEntry`. `MediaEntry` is a stable object per
+entry, replaced only when its status changes, so `memo` means a row re-renders
+when its own file lands and never when a neighbour's does.
+
+The player and the video both claim `src/ui/media/playback.ts`, so opening a
+second one pauses the first, and a row virtualized out of the window unmounts and
+releases its claim: a voice note stops when its row leaves the window. That is a
+limit, not a bug (there is no mini-player in this sprint).
+
+Media that cannot be shown says which of the three things went wrong, because
+they mean different things:
+
+| State                         | What renders                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| not in the export             | "Photo not included in export" + the filename, no control                                                     |
+| in the export, won't decode   | "Photo can't be shown here" (video: "Video can't be played here", audio: "Can't play here") + a Download link |
+| the archive stopped answering | the same tile as the row above, without the Download link                                                     |
+
+A contact and a location both carry no bytes, so both render the naming tile, but
+only the location's URL becomes a link (`target="_blank"` +
+`rel="noopener noreferrer"`, the same treatment `FormattedText` gives every
+external link). They are decided before the "not in the export" test, because a
+location is always `resolved: false`: the parser has the maps URL, not an archive
+entry, so reading that flag first would label every location "Location not
+included in export" and bury the link.
+
+The row decides the bubble's shape, not CSS: a visual with no caption wears
+`bubble--meta-overlay`, which moves the meta onto the frame's scrim, and that is
+`MessageRow`'s call rather than a `:has()` in `MessageRow.css` (§3.5). It gates
+that class on the shape a body actually painted, and the body reports it up
+through `onDegrade`: the store's `ready` means the bytes were extracted, not that
+a frame was painted, and a photo whose bytes will not decode or a video whose
+codec the engine cannot demux falls back to a tile _after_ extraction. Putting
+the meta on that tile lands it over the Download link, which is then unclickable
+by pointer. The shape starts at `frame` and only ever settles on `tile`, so a
+normal photo never calls the setter and never pays an extra render.
+
 ## Not in this sprint
 
-- Formatting (`*bold*`, links, jumbo emoji) is E4-6, next sprint. Message text is
-  currently a plain React text node, which is also the S-5 guarantee.
-- Media renders as a labeled tile reporting the file the parser found: the real
-  filename, the kind and the size for a resolved reference, and
-  "<Kind> not included in export" plus the filename for one the archive lacks
-  (F-VIEW-12). The image, video and audio player arrive with E5 (E5-2/E5-4).
-  Nothing is faked: the tile never draws a preview it does not have.
+E5 ships a viewer, not a player suite. The following are drawn in `DESIGN.md` and
+deliberately not built here, so no dead control ships (R-26):
 
-## Forward button, reactions, replies
-
-`DESIGN.md` shows a forward button beside media and large link previews. Those
-are E5/E7 and are not drawn here, so no dead control ships (R-26).
+- The speed pill (`1x`/`1.5x`/`2x`) and the mic glyph on the voice avatar: not in
+  E5-4's criteria, and the glyph would fail 1.4.11 on the light bubble.
+- The forward button (DESIGN §3.16, no destination), reaction pills (§3.11, E8),
+  the album grid (an album is a feature with its own navigation), "Read more"
+  (§3.27, E7), and the media viewer / lightbox (§3.39, E5-9).
+- The `GIF` badge and the video's duration line on the scrim: the meta's kind
+  glyph and the native controls already carry both.
+- The map _image_ for a location (a map is a network fetch, which PRD S-2
+  forbids). The URL itself is a real link, drawn per §3.2 and listed above: it
+  fetches nothing until the user clicks it, and PRD S-3 permits that tab.
+- Sent/read ticks: no message renders them today, and this sprint does not
+  introduce them. The overlay shows the clock, like every other bubble.
+- The real waveform (E5-5): the 45 bars are uniform, because varied heights would
+  claim an amplitude reading the export does not carry.
+- The contact card (E5-8): a `.vcf` keeps the naming tile.
+- The loading shimmer DESIGN §3.7 asks for: MOTION is 1 and the repository has no
+  `@keyframes`, so the pending state is a static `--card-inner` box at the
+  reserved size.
 
 ## The shell (E6-2)
 

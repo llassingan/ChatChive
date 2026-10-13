@@ -216,3 +216,47 @@ Known limitations carried forward (not blocking E1-2/E1-3):
   it with a visible label, or bump it if used for anything load-bearing.
 - `--accent` as a link color inside `--bubble-out` was ~4.1:1 (a fail). Resolved in Sprint 4
   by the per-theme `--link` token with an underline, measured in the table above.
+
+Sprint 5 (E5-2 to E5-7 media). Three new text roles, all on surfaces the media
+rows draw themselves:
+
+| Theme   | Pair                                                     | Ratio | Normal (4.5:1) |
+| ------- | -------------------------------------------------------- | ----- | -------------- |
+| Dark    | `--wave-played` `#53BDEB` on `--bubble-out`              | 4.59  | PASS           |
+| Dark    | `--wave-played` `#53BDEB` on `--bubble-in`               | 7.13  | PASS           |
+| Light   | `--wave-played` `#0369A1` on `--bubble-out`              | 5.35  | PASS           |
+| Light   | `--wave-played` `#0369A1` on `--bubble-in`               | 5.93  | PASS           |
+| Classic | `--wave-played` `#8AD6F7` on `--bubble-out`              | 4.95  | PASS           |
+| Classic | `--wave-played` `#8AD6F7` on `--bubble-in`               | 8.88  | PASS           |
+| All     | white 12px meta on the scrim `rgba(0, 0, 0, 0.6)`        | 5.74  | PASS           |
+| All     | white 12px meta on DESIGN's `0.5` scrim (rejected)       | 3.95  | FAIL           |
+| All     | white 10px 700 on the PDF tile `#C0392B`                 | 5.44  | PASS           |
+| All     | white 10px 700 on DESIGN's `#E2574C` PDF tile (rejected) | 3.68  | FAIL           |
+| All     | white 10px 700 on the DOCX tile `#2A5699`                | 7.27  | PASS           |
+| All     | white 10px 700 on the XLSX tile `#1E7145`                | 5.99  | PASS           |
+| All     | white 10px 700 on the ZIP/other tile `#5F6368`           | 6.05  | PASS           |
+
+Sprint 5 additions to the deviation list:
+
+- `--wave-played` is new and per-theme. `--tick-read` (`#53BDEB` everywhere) cannot serve as the
+  played-bar color: on the light green bubble it is 1.92:1, on the light white bubble 2.13:1, and
+  on classic's outgoing bubble 3.74:1. The played/unplayed split is not color-only (WCAG 1.4.1):
+  the playhead knob sits at the boundary, the elapsed clock updates, and the seek slider carries
+  `aria-valuetext`. Unplayed bars reuse `--text-secondary`, which already clears AA on both
+  bubble fills, so no second token is added.
+- The overlay scrim's text band is a flat `rgba(0, 0, 0, 0.6)` across a 40px gradient, not
+  `DESIGN.md` §3.7's fade to `0.5`: a fade reaches its nominal alpha only at the last pixel, and
+  `0.5` measures 3.95:1 under white 12px text. The meta sits inside the flat band (`0.6`,
+  5.74:1).
+- The PDF tile is `#C0392B`, not `DESIGN.md` §3.15's `#E2574C`, which measures 3.68:1 with white
+  10px 700 text on it. The other three tile colors are used as specified. All four live in
+  `chat/media/media.css` as local values scoped to the tile, not in `tokens.css`: exactly one
+  rule set uses them.
+- The waveform is 45 uniform bars, not `DESIGN.md` §3.12's varied heights: no export carries an
+  amplitude reading, so a varied height would claim data we do not have (E5-5 owns the real
+  waveform).
+- The media row's loading state is a static `--card-inner` box at the reserved size, with no
+  shimmer (`MOTION` 1). The image box reserves 4:3 until the element reports its real ratio.
+- The chat view keeps the imported archive open for as long as a chat is open, because media is
+  extracted lazily; `close()` (Back, "Close chat", or unmount) is the single place memory is
+  freed. F-NAV-6's promise is kept by that close, not by closing at parse time.

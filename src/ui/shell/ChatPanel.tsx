@@ -20,11 +20,12 @@
  * The panel is `display: none` below 768px (ChatShell.css), so on mobile this
  * markup is present but hidden.
  */
-import type { Chat, MediaKind, Message } from '../../types/chat.ts';
+import type { Chat, Message } from '../../types/chat.ts';
 import { formatClock } from '../format.ts';
 import { toPlainText } from '../formatText.ts';
 import { Icon } from '../icons/index.ts';
 import { Avatar } from '../chat/MessageRow.tsx';
+import { MEDIA_META } from '../chat/mediaMeta.ts';
 import './ChatPanel.css';
 
 export interface ChatPanelProps {
@@ -47,34 +48,15 @@ function chatParticipant(chat: Chat) {
 }
 
 /**
- * Media labels, mirroring `MEDIA_META` in `chat/MessageRow.tsx` (A3, A8). That
- * map is module-private and that file belongs to another owner this sprint, so
- * this is the one duplicated constant the sprint accepts; the plan records the
- * drift risk as risk 13. If the two ever disagree, the bubble's label is the
- * source of truth, because it is what the reader sees.
- *
- * Typed as `Record<MediaKind, string>` on purpose: `MediaKind` is the frozen
- * union, so a new media kind makes this file fail to compile instead of
- * silently rendering an empty preview.
- */
-const MEDIA_LABEL: Record<MediaKind, string> = {
-  image: 'Photo',
-  video: 'Video',
-  gif: 'GIF',
-  sticker: 'Sticker',
-  voice: 'Voice message',
-  audio: 'Audio',
-  document: 'Document',
-  contact: 'Contact',
-  location: 'Location',
-};
-
-/**
  * The row's preview line: the newest message, said the way the bubble says it
  * (A3). A text or caption body goes through `toPlainText`, because `text`
  * arrives raw with its markers intact: without it the panel would print
  * `A *bold* reply` beside a bubble that renders bold. The placeholder and call
  * kinds reuse the bubble's own honest words rather than inventing a summary.
+ *
+ * A media message with no caption says the kind's label from `MEDIA_META`, the
+ * same map the bubble reads. This file used to carry a copy of it; two identical
+ * maps cannot drift if there is only one (E5, Sprint 4 §8.3).
  */
 function previewOf(message: Message | undefined): string | null {
   if (!message) return null;
@@ -83,7 +65,7 @@ function previewOf(message: Message | undefined): string | null {
     case 'system':
       return toPlainText(message.text);
     case 'media':
-      return message.caption ? toPlainText(message.caption) : MEDIA_LABEL[message.media.kind];
+      return message.caption ? toPlainText(message.caption) : MEDIA_META[message.media.kind].label;
     case 'deleted':
       return message.byMe ? 'You deleted this message' : 'This message was deleted';
     case 'empty':

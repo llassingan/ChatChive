@@ -36,7 +36,11 @@ export function App() {
         />
       ) : null}
 
-      {state.status === 'chat' ? <ChatShell chat={state.chat} onClose={flow.cancel} /> : null}
+      {/* The session travels with the parsed chat: media rows extract bytes from
+          it on demand while the chat is open (E5-1, plan §2.4). */}
+      {state.status === 'chat' ? (
+        <ChatShell chat={state.chat} session={state.session} onClose={flow.cancel} />
+      ) : null}
 
       {state.status === 'error' ? <ErrorView error={state.error} onBack={flow.cancel} /> : null}
     </div>

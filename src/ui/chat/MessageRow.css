@@ -296,8 +296,9 @@
   color: var(--notice-encryption);
 }
 
-/* Media tile (E5 placeholder). The real image or player replaces this next
-   sprint; the tile reports the file the parser resolved. */
+/* Media tile (E5-7, §3.3). The named tile for a file this viewer cannot show:
+   either the archive never had it, or its bytes are not decodable. The real
+   bodies (image, video, sticker, player, document) live in `media/media.css`. */
 .media {
   display: flex;
   align-items: center;
@@ -336,6 +337,15 @@
   overflow-wrap: anywhere;
 }
 
+/* A location's maps URL is a real link (§3.2), so it takes the app's one
+   outbound treatment (`FormattedText.css`): `--link` and an underline, because
+   color alone is never the only signal (WCAG 1.4.1). Measured on this tile's
+   own surface, `--card-inner`: dark 7.94:1, light 5.48:1, classic 9.34:1. */
+a.media__title {
+  color: var(--link);
+  text-decoration: underline;
+}
+
 .media__sub {
   color: var(--text-secondary);
   font-size: var(--fs-timestamp);
@@ -352,4 +362,140 @@
 
 .bubble__empty {
   font-style: normal;
+}
+
+/* ---- A visual with no caption: the meta moves onto the frame (E5-2, §4.3) ----
+   A gradient that reaches 0.5 only at the very last pixel does not help the
+   text, which sits inside the fade and not at its end: DESIGN §3.7's
+   `transparent -> rgba(0,0,0,0.5)` measures 3.95:1 under 12px white text on a
+   white photo, a fail. The band is therefore a flat `rgba(0, 0, 0, 0.6)` -
+   measured 5.74:1 - with only the top 30% fading in, and the meta sits inside
+   the flat part (plan §4.3). */
+.bubble--meta-overlay {
+  padding: 3px;
+}
+
+.bubble--meta-overlay .bubble__content {
+  position: relative;
+}
+
+.bubble--meta-overlay .media-frame {
+  margin: 0;
+}
+
+.bubble--meta-overlay .bubble__content::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 40px;
+  border-bottom-right-radius: calc(var(--radius-media) - 3px);
+  border-bottom-left-radius: calc(var(--radius-media) - 3px);
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.6) 30%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+/* Inside the band: white text, absolutely placed bottom-right, no float. The
+   scrim is the band; the meta only has to sit on it. */
+.bubble--meta-overlay .meta {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  float: none;
+  height: 40px;
+  margin: 0;
+  padding: 0 var(--space-5);
+  color: #fff;
+}
+
+/* ---- Sticker: no bubble (E5-3, §3.5) ----
+   The same shape `bubble--jumbo` already has: the bubble keeps its box for run
+   grouping and loses its fill and its padding, and the meta becomes the pill
+   below the sticker at the sender's edge, which the jumbo pill rules already
+   describe, so they are reused rather than restated. */
+.bubble--sticker {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.bubble--sticker .bubble__content {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.bubble--sticker .sticker {
+  margin: 0;
+}
+
+.bubble--sticker .meta {
+  float: none;
+  clear: both;
+  display: flex;
+  width: fit-content;
+  margin: var(--space-2) 0 0;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--pill-bg);
+  color: var(--pill-text-secondary);
+}
+
+.bubble--sticker.bubble--in .meta {
+  margin-right: auto;
+}
+
+.bubble--sticker.bubble--out .meta {
+  margin-left: auto;
+}
+
+/* ---- Voice/audio: the meta takes its own row (E5-4, §3.5) ----
+   The player's grid is the wave row; the meta is the bubble's own child, so it
+   is placed under it rather than inside the grid. */
+.bubble--voice .meta {
+  float: none;
+  clear: both;
+  display: flex;
+  justify-content: flex-end;
+  margin: var(--space-2) 0 0;
+}
+
+/* ---- The two "cannot show" tiles (E5-7, §3.3) ----
+   `--missing` is the dashed tile the placeholder has always been, with no
+   control; `--broken` is the filled row that says the bytes came out of the
+   archive but will not render here, with the Download link on its trailing edge. */
+.media--broken {
+  min-height: 48px;
+  align-items: center;
+}
+
+.media--document,
+.media--broken {
+  align-items: center;
+}
+
+.media--document .media__download,
+.media--broken .media__download {
+  margin-left: auto;
+}
+
+/* The document row does not wrap: the filename ellipsizes rather than pushing
+   the download control onto a second line (DESIGN §3.15). */
+.media--document .media__text {
+  flex: 1 1 auto;
+}
+
+.media--document .media__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
