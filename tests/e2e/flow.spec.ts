@@ -145,9 +145,14 @@ test.describe('every shipped theme renders the flow', () => {
   for (const theme of ['light', 'classic']) {
     test(`${theme} theme opens a chat with no overflow`, async ({ page }) => {
       // No theme toggle is shipped yet (PRD puts it in v0.2), so the attribute
-      // is set the way E7-3 will set it.
+      // is set the way E7-3 will set it. An init script runs before the parser
+      // has built the root element, so `documentElement` is still null there and
+      // assigning to it throws (it does not apply the theme); defer to
+      // `DOMContentLoaded`, which lands before the app renders.
       await page.addInitScript((value) => {
-        document.documentElement.dataset.theme = value;
+        document.addEventListener('DOMContentLoaded', () => {
+          document.documentElement.dataset.theme = value;
+        });
       }, theme);
 
       await page.goto('/');

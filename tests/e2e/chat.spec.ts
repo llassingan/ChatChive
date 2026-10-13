@@ -215,13 +215,20 @@ test('a system notice and an empty body render as their own styles (E4-7)', asyn
   await expect(page.locator('.pill--encryption')).toContainText('end-to-end encrypted');
 });
 
-test('media renders a real tile, and missing media says so (F-VIEW-12)', async ({ page }) => {
+test('media renders real media, and missing media says so (F-VIEW-12)', async ({ page }) => {
   await openZip(page);
 
-  // The zip has the referenced image and voice note, so both resolve.
-  await expect(page.getByText('IMG-20260602-WA0010.jpg')).toBeVisible();
-  await expect(page.getByText(/Photo · 70 B/)).toBeVisible();
-  await expect(page.getByText('PTT-20260603-WA0011.opus')).toBeVisible();
+  // The zip carries a real 400x300 JPEG and a real 1.0 s Ogg Opus, so the image
+  // renders at its natural size (no placeholder tile, and no "· 70 B" line) and
+  // the voice note is a player rather than a file tile.
+  const image = page.locator('.media-frame--image[data-state="ready"] img').first();
+  await expect(image).toBeVisible();
+  const natural = await image.evaluate((node) => ({
+    width: (node as HTMLImageElement).naturalWidth,
+    height: (node as HTMLImageElement).naturalHeight,
+  }));
+  expect(natural).toEqual({ width: 400, height: 300 });
+  await expect(page.locator('.voice__toggle').first()).toBeVisible();
 
   // A text-only export references media that is not in the file, and carries an
   // omitted-media notice; both get an honest placeholder (F-VIEW-12).
@@ -301,9 +308,14 @@ test.describe('every shipped theme renders the chat', () => {
   for (const theme of ['light', 'classic']) {
     test(`${theme} theme opens the chat with no overflow`, async ({ page }) => {
       // No theme toggle is shipped yet (PRD puts it in v0.2), so the attribute
-      // is set the way E7-3 will set it.
+      // is set the way E7-3 will set it. An init script runs before the parser
+      // has built the root element, so `documentElement` is still null there and
+      // assigning to it throws (it does not apply the theme); defer to
+      // `DOMContentLoaded`, which lands before the app renders.
       await page.addInitScript((value) => {
-        document.documentElement.dataset.theme = value;
+        document.addEventListener('DOMContentLoaded', () => {
+          document.documentElement.dataset.theme = value;
+        });
       }, theme);
 
       await openZip(page);

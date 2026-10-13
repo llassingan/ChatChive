@@ -222,8 +222,13 @@ test('jumbo: one and three emoji are large with no bubble fill, four are not', a
 
 test('the mixed message keeps its meta inside the bubble in every theme', async ({ page }) => {
   for (const theme of ['dark', 'light', 'classic']) {
+    // An init script runs before the parser has built the root element, so
+    // `documentElement` is still null there and assigning to it throws (the
+    // theme would never apply); defer to `DOMContentLoaded`.
     await page.addInitScript((value) => {
-      document.documentElement.dataset.theme = value;
+      document.addEventListener('DOMContentLoaded', () => {
+        document.documentElement.dataset.theme = value;
+      });
     }, theme);
     await openFormatting(page);
 

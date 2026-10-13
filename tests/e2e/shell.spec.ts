@@ -226,7 +226,17 @@ test.describe('browser back', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(page.locator('.chat-panel')).toBeVisible();
 
-    await page.locator('body').click();
+    // Reset the sequential-focus starting point to the top of the document. A
+    // `body.click()` is not that reset: since E5-1 `export.zip` carries a real
+    // JPEG and voice note, the click lands on the pane's media, and a mouse
+    // click moves the starting point to the clicked element (measured: the
+    // first Tab then resumed at `.voice__toggle`). Focusing the body puts the
+    // starting point ahead of every control, which is what "first Tab" means
+    // here. This is a test-harness fix; the tab order itself is unchanged.
+    await page.evaluate(() => {
+      document.body.tabIndex = -1;
+      document.body.focus();
+    });
     await page.keyboard.press('Tab');
     expect(await page.evaluate(() => document.activeElement?.className)).toContain(
       'chat-panel__row',
