@@ -55,9 +55,13 @@ rather than failing on every push:
 | Secret | `DOKPLOY_DEPLOY_WEBHOOK` | Dokploy, application, Deployments tab, Webhook URL (ends in `/api/deploy/<token>`) |
 
 The webhook URL is a bearer credential — anyone holding it can trigger a deploy —
-so it is stored as a secret and never echoed to the log. Add the secret, point
-Dokploy's application at this repository and branch `main`, and each push to
-`main` builds here and triggers the deploy.
+so it is stored as a secret and never echoed to the log. The workflow POSTs a
+GitHub-push-shaped body (`{"ref":"refs/heads/main"}` with an `x-github-event:
+push` header) because Dokploy reads the branch out of the payload and compares it
+to the application's own branch setting: an empty body is always rejected with
+`301 Branch Not Match`, whichever branch the application is mapped to. Leave
+Dokploy's **watch paths** empty (its default); the workflow does not send a commit
+list, and Dokploy only skips an empty watch-path list when it is empty.
 
 Steps for the owner:
 
@@ -66,8 +70,11 @@ Steps for the owner:
 3. Push to `main`, or run the Deploy workflow manually.
 
 Pull requests do not deploy: the workflow runs on `main` and manual dispatch only,
-so an untrusted PR cannot reach the webhook. **The live deploy is unverified.** It
-has not been run against a real Dokploy instance, because none exists yet.
+so an untrusted PR cannot reach the webhook. The webhook trigger itself has been
+exercised against a real Dokploy instance (it answered `301 Branch Not Match`
+before the payload carried a branch, and `200` after). Two parts remain
+unverified: Dokploy must be configured to serve `dist/` with the four response
+headers above, and the production URL has not been loaded end to end.
 
 ## Contributing
 

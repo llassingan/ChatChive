@@ -17,12 +17,20 @@ name: Deploy
 #   Secret  DOKPLOY_DEPLOY_WEBHOOK  Dokploy > Application > Deployments >
 #                                   Webhook URL (ends in `/api/deploy/<token>`)
 #
-# The body sent is `{}`: Dokploy's generic webhook matches the application by
-# the token in the URL and checks the branch against the application's own
-# configuration, so no branch or payload fields are needed.
+# The body must carry the branch. Dokploy's webhook handler resolves the branch
+# from the payload (`extractBranchName` reads `body.ref` for a GitHub push) and
+# compares it against the application's configured branch, answering
+# `301 {"message":"Branch Not Match"}` when it cannot read one. An empty body has
+# no `ref`, so it is always rejected no matter which branch the application is
+# mapped to. The `x-github-event: push` header is what tells Dokploy which shape
+# to parse.
 #
-# The live deploy is unverified: nothing here has run against a real Dokploy
-# instance, because none exists yet.
+# Watch paths must be left empty in Dokploy (the default): the handler checks
+# them against `body.commits`, which this payload does not carry, and
+# `shouldDeploy` returns true for an empty list.
+#
+# Verified against a real Dokploy instance: the empty body was rejected with
+# `301 Branch Not Match`, and this payload was accepted.
 
 on:
   push:
@@ -62,17 +70,23 @@ jobs:
         if: steps.config.outputs.configured == 'true'
         env:
           WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
+          BRANCH: ${{ github.ref_name }}
         run: |
           # The URL is never echoed. `--fail-with-body` turns a 4xx/5xx into a
           # failed step while still printing Dokploy's message (e.g. "Branch Not
           # Match"), which is the diagnostic the owner needs; the URL itself
           # stays out of the log because only the response body is printed.
+          #
+          # `ref` is written as a JSON object with jq, so the branch name is
+          # escaped rather than spliced into a hand-built string.
+          body=$(jq -n --arg ref "refs/heads/$BRANCH" '{ref: $ref}')
           status=$(curl --silent --show-error --fail-with-body \
             --output /tmp/dokploy-response.txt \
             --write-out '%{http_code}' \
             --request POST \
             --header 'Content-Type: application/json' \
-            --data '{}' \
+            --header 'x-github-event: push' \
+            --data "$body" \
             "$WEBHOOK" || true)
           echo "Dokploy responded with HTTP $status"
           cat /tmp/dokploy-response.txt 2>/dev/null || true
