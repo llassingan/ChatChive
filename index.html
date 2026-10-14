@@ -24,15 +24,17 @@
     />
     <meta name="referrer" content="no-referrer" />
     <!--
-      Inline favicon (data URI): no network request, which the no-network promise
-      requires. Same geometry as the brand mark in src/ui/brand/Mark.tsx, on the
-      accent tile the landing page uses, so the tab icon and the page agree. Keep
-      the two in step by hand.
+      App icon: the owner's artwork (`icon.svg`, served from `public/`), used for
+      the tab and for home-screen bookmarks. It is a 145 KB VTracer raster trace
+      of the ChatChive mark, so it is NOT inlined as a data URI: the file is
+      fetched once from our own origin and cached. That fetch happens during the
+      initial shell load, before the no-network window starts (the promise in
+      PRD §8 covers everything after load), so it does not break S-2.
+      `apple-touch-icon` reuses the same file: iOS wants a square icon and the
+      artwork already fills its frame.
     -->
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%2321C063%22/%3E%3Cg transform=%22translate(3.36 3.36) scale(0.72)%22 fill=%22none%22 stroke=%22%230B0B0B%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M8 2.75h8a4.5 4.5 0 0 1 4.5 4.5v2a4.5 4.5 0 0 1-4.5 4.5H8A4.5 4.5 0 0 1 3.5 9.25V7.25A4.5 4.5 0 0 1 8 2.75Z%22/%3E%3Cpath d=%22M10.2 13.35Q3.43 14.4 3.8 21.25Q9.02 18.94 10.2 13.35Z%22/%3E%3C/g%3E%3C/svg%3E"
-    />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <link rel="apple-touch-icon" href="./icon.svg" />
     <meta
       name="description"
       content="Open a WhatsApp chat export in your browser. Nothing is uploaded. Not affiliated with WhatsApp or Meta."

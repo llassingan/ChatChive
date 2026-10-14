@@ -3,45 +3,57 @@
 The project's own visual identity, kept apart from `icons/` because an icon
 represents a thing in the UI and a brand mark represents the product.
 
-- `Mark.tsx`: the mark, inlined as a React element. Chosen by the project owner
-  in Sprint 6 from four candidates (`SPRINT-6-PLAN.MD` Track D).
+- `Mark.tsx`: the mark, rendered as an `<img>` of the artwork the app serves at
+  `public/icon.svg`.
 
-## The idea
+## Sprint 7: the owner's artwork replaces the drawn mark
 
-A speech bubble whose tail is a chive leaf. It carries both halves of the name in
-one shape: a conversation, and the chive. The tail sits where the eye already
-expects a tail to be, so the shape reads at a glance and the leaf is what makes it
-this product's bubble rather than anyone's.
+The Sprint 6 mark was a hand-drawn 24×24 stroke bubble with a leaf tail, chosen
+from four candidates. In Sprint 7 the project owner supplied the product's own
+artwork and asked for it to be the app icon everywhere. It is used **as-is**; the
+drawn mark is gone.
+
+What the file is, because it shapes every decision around it: `public/icon.svg`
+is a **VTracer raster trace** (its own comment names the generator). It is a
+470×394 canvas holding a ~352×355 square emblem, 237 `<path>` elements, ~116 KB,
+with one path per near-identical colour fragment — a bitmap traced to vectors,
+not vector artwork drawn by hand. It has a **transparent background** (no
+background path or rect), so it is the emblem alone, not an emblem on a tile.
+
+### What was changed, and what was not
+
+- **Added a `viewBox`.** The file shipped with `width="470" height="394"` and no
+  `viewBox`, so it could not scale: at any size other than 470px wide it would
+  crop or letterbox. `viewBox="0 0 470 394"` was added in place; the paths are
+  otherwise untouched.
+- **Served it, did not inline it.** At ~116 KB it is far too heavy to inline into
+  the shell, and too heavy for a `data:` favicon. It lives in `public/icon.svg`
+  and is fetched once from our own origin, then cached.
+
+### The no-network promise (PRD §8 S-2)
+
+The promise is that nothing leaves the device _after the shell loads_. The icon
+is part of the shell: it is same-origin, requested once during initial load, and
+covered by the browser cache. The e2e `no-network.spec.ts` starts watching for
+requests only after `networkidle`, so the icon does not count and does not have
+to. This is the one place where the old "no request at all" inline-favicon rule
+was deliberately relaxed, because the owner asked for the artwork as-is.
+
+### Where it appears
+
+- `public/icon.svg` — the file itself.
+- `index.html` — `rel="icon"` and `rel="apple-touch-icon"` both point at it.
+- `Mark.tsx` — an `<img src="<base>icon.svg">`, used by the landing brand.
+
+### Backing
+
+Because the artwork is transparent, it must sit on a background that its dark
+greens and pale highlights both read against. `.landing__mark` paints
+`--accent-strong` behind it, so the emblem reads on the landing page in both app
+themes. A bare placement elsewhere would need its own backing.
 
 ## Constraint check
 
 `DESIGN.md` §6 and PRD §11 require original artwork and forbid using WhatsApp's
-name or logo. The mark therefore has:
-
-- no telephone handset and no phone receiver;
-- no green disc with a white glyph inside it;
-- a leaf-shaped tail, not WhatsApp's angular nub.
-
-## Drawing rules
-
-Same hand as everything else the project draws (`DESIGN.md` §1.5, the icon set and
-the wallpaper): a 24×24 grid, 2px stroke, round caps and joins, no fill, one
-colour from `currentColor`. Adding a second visual language for the logo is what
-this section exists to prevent.
-
-Measured, not assumed: the ink bounding box is centred on (12, 12), so the mark
-sits square in whatever box holds it, and no ink falls outside the viewBox.
-
-## Colour
-
-`currentColor`, so the caller sets it. On the landing page the mark sits inside
-`.landing__mark`, which paints `--accent-strong` and sets `--accent-on` for the
-glyph (8.23:1 dark, 4.89:1 light, both clearing the 3:1 floor for a graphical
-object). A bare mark on a light page must use `--accent-text` (`#05603A`, 6.40:1);
-`--accent` (`#1DAA61`) measures 2.51:1 there and fails.
-
-## The favicon
-
-`index.html` carries the same geometry as an inline `data:` URI, so the icon costs
-no request. It has to be kept in step by hand: if the mark's paths change here,
-change them there too.
+name or logo. The owner's mark is their own artwork; it carries no telephone
+handset and no green disc with a WhatsApp glyph inside it.

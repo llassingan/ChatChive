@@ -23,6 +23,11 @@
   font-weight: var(--fw-semibold);
 }
 
+/* The mark is the owner's artwork and has a transparent background, so this
+   wrapper gives it a backing to sit on: without one the pale parts of the
+   emblem would disappear into whatever the page is painted. The artwork is
+   square (its own ink bbox is ~352x355 on a 470x394 canvas), so a square tile
+   holds it without distortion. */
 .landing__mark {
   display: inline-flex;
   align-items: center;
@@ -31,7 +36,7 @@
   height: 2.5rem;
   border-radius: var(--radius-card);
   background: var(--accent-strong);
-  color: var(--accent-on);
+  overflow: hidden;
 }
 
 .landing__wordmark {

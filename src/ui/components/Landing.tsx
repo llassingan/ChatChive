@@ -38,7 +38,7 @@ export function Landing({ onFile }: LandingProps) {
     <main className="landing">
       <h1 className="landing__brand">
         <span className="landing__mark" aria-hidden="true">
-          <Mark size={20} />
+          <Mark size={40} />
         </span>
         <span className="landing__wordmark">ChatChive</span>
       </h1>
