@@ -76,9 +76,7 @@ Client-side only. Two tracks meet at the shared data model in `src/types/`:
 
 MIT. See `LICENSE`.
 
-**The MIT question is settled: this project stays MIT.** PRD §11 and §15 Q1 asked whether to
-switch to a copyleft license (AGPL-3.0 or MPL-2.0) so forks would have to stay open. That
-trade was considered and declined. MIT lets anyone copy, modify, rebrand and sell this code,
+**The MIT question is settled: this project stays MIT.** MIT lets anyone copy, modify, rebrand and sell this code,
 and the project accepts that, because a client-side app ships its source to every visitor's
 browser anyway and obfuscating it would work against the promise that you can inspect what
 runs on your device. What distinguishes the project is the name, the canonical release, and
