@@ -9,6 +9,7 @@ sample export).
 | `export.zip`           | Android personal chat with a `.txt` + an image + a voice note                          |
 | `media.zip`            | One entry per media kind this sprint renders, plus a junk audio file and a missing one |
 | `broken-image.zip`     | One uncaptioned JPEG whose bytes will not decode, for the tile's hit test (E5-7)       |
+| `sprint7-bugs.zip`     | Interleaved multi-message runs and one empty body (`Sender:` with nothing after it), for the Sprint 7 defect specs |
 | `export.txt`           | Android text-only chat, no media, no zip                                               |
 | `large.txt`            | 5,001 messages over three days, for the virtualization check (E4-1)                    |
 | `script-injection.txt` | Message bodies carrying `<script>` and `<img onerror>`, for the S-5 test               |

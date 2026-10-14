@@ -38,6 +38,7 @@ WhatsApp Chat with*
 !tests/e2e/fixtures/export.zip
 !tests/e2e/fixtures/media.zip
 !tests/e2e/fixtures/broken-image.zip
+!tests/e2e/fixtures/sprint7-bugs.zip
 
 # Scratch: unwanted files are moved here instead of deleted (project rule)
 .trash/

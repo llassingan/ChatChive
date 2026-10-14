@@ -7,7 +7,13 @@ import { expect, test, type Page } from '@playwright/test';
  * one (see `.agent-report/SPRINT-7.MD`). Paths are relative to the repo root.
  */
 
-const REAL_EXPORT = 'WhatsApp Chat with No Hp besar.zip';
+// The bugs were reported against the owner's real export, but that file is
+// personal data and is gitignored (`.gitignore`, PRD §E2-1/S-4), so it is not
+// on CI. This committed synthetic fixture reproduces the shape the three tests
+// need: multi-message runs from one sender, run boundaries across senders and
+// days, and one empty body (`Sender:` with nothing after it), which is the
+// BUG-4 case. It lives in `tests/e2e/fixtures/` and is un-ignored there.
+const FIXTURE = 'tests/e2e/fixtures/sprint7-bugs.zip';
 
 async function open(page: Page, fixture: string) {
   await page.goto('/');
@@ -23,7 +29,7 @@ async function open(page: Page, fixture: string) {
  */
 test('BUG-3: bubbles in a run and between runs have a real gap', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await open(page, REAL_EXPORT);
+  await open(page, FIXTURE);
   await expect(page.locator('.chat-list__item .bubble').first()).toBeVisible();
 
   const gaps = await page.evaluate(() => {
@@ -66,7 +72,7 @@ test('BUG-3: bubbles in a run and between runs have a real gap', async ({ page }
  */
 test('BUG-2: the bubble tail is welded to the bubble with no gap', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await open(page, REAL_EXPORT);
+  await open(page, FIXTURE);
 
   const seam = await page.evaluate(() => {
     const bubble = document.querySelector('.bubble--in.bubble--last');
@@ -103,7 +109,7 @@ test('BUG-2: the bubble tail is welded to the bubble with no gap', async ({ page
 test('BUG-4: an empty body reads as an italic not-in-export note that names calls', async ({
   page,
 }) => {
-  await open(page, REAL_EXPORT);
+  await open(page, FIXTURE);
   await expect(page.locator('.chat-list')).toBeVisible();
 
   const empty = page.locator('.bubble__empty').first();
