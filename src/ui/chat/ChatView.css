@@ -30,6 +30,50 @@
   background: transparent;
 }
 
+/* The list and the search panel (E7-1). One flex row on desktop, where the panel
+   is a right-hand column; one column on mobile, where the same element becomes a
+   full-width band directly under the header. Either way the panel is a sibling
+   of the list, never an overlay: the messages keep their full width minus the
+   panel's, and nothing is ever covered. */
+.chat__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.chat__main > .chat-list-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Mobile placement: a band above the list, so the field lands at the top of the
+   reading area where the eye already is. Only the field is drawn — the result
+   list is not, because on a phone the results *are* the messages below, and a
+   second list of the same hits would take the screen the messages need. */
+.chat__search-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+/* Desktop placement: the right-hand column. It is a real column of the row, so
+   the message list is never covered. The result list needs its own scroll, and
+   the column is bounded by the row, not by the viewport. */
+@media (min-width: 768px) {
+  .chat__main {
+    flex-direction: row;
+  }
+
+  .chat__search-panel {
+    flex: 0 0 360px;
+    width: 360px;
+    min-height: 0;
+    height: 100%;
+    border-left: 1px solid var(--divider);
+  }
+}
+
 .chat__header {
   display: flex;
   align-items: center;
@@ -130,6 +174,88 @@
 
 .chat__menu-item:hover {
   background: var(--bg-list-hover);
+}
+
+/* Theme preference (E7-3). A native radio group — one tab stop, arrow keys to
+   move between the modes, and the browser announces the checked state — with
+   the dot drawn by hand rather than left to `accent-color`: a native control
+   renders in the browser's own colour scheme, and nothing in this repo declares
+   `color-scheme`, so a stock dot would be a light-scheme widget sitting on a
+   dark panel. Every colour below is an existing token, measured per theme
+   (see the report): the unchecked ring and the checked fill both clear 3:1
+   against the panel in all three. */
+.chat__theme {
+  display: flex;
+  flex-direction: column;
+  /* A fieldset is `min-inline-size: min-content` by default, which would let a
+     long legend force the panel wider than its 200px floor. */
+  min-inline-size: 0;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.chat__theme-legend {
+  padding: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  font-weight: var(--fw-medium);
+}
+
+.chat__theme-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  /* The same 44px touch floor the menu rows carry (R-32, F-RES-4, E6-1). */
+  min-height: 44px;
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-pill);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.chat__theme-option:hover {
+  background: var(--bg-list-hover);
+}
+
+.chat__theme-option input {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Checked is the standard radio shape — ring, gap, dot. The border is the
+   accent ring, and an inset shadow of the panel's own colour paints the gap
+   back over the fill, leaving the middle dot showing through. */
+.chat__theme-option input:checked {
+  border-color: var(--accent-text);
+  background: var(--accent-text);
+  box-shadow: inset 0 0 0 4px var(--bg-input);
+}
+
+/* The gap has to follow the row, or hovering a selected row leaves a 4px halo
+   of the panel colour inside a row painted a shade lighter. */
+.chat__theme-option:hover input:checked {
+  box-shadow: inset 0 0 0 4px var(--bg-list-hover);
+}
+
+/* The ring goes on the whole row, not on the 20px dot: the row is the target
+   the reader aims at, and it is what the label text sits inside. The input's
+   own outline is suppressed only because the row's ring replaces it, so the
+   focused control is still visibly outlined (R-32). */
+.chat__theme-option:has(input:focus-visible) {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.chat__theme-option input:focus-visible {
+  outline: none;
 }
 
 /* Read-only footer replacing the composer (F-RES-5). Mobile: 50px + safe area. */

@@ -37,6 +37,11 @@ export type MediaEntry =
 type ReadyEntry = Extract<MediaEntry, { status: 'ready' }>;
 
 export interface MediaStore {
+  /**
+   * The session this store extracts from, so a caller can tell whether an
+   * existing store already belongs to the current session (Sprint 7 BUG-1).
+   */
+  readonly session: ChatSession | null;
   /** Current state, or null when nothing has been requested. Never triggers work. */
   get(entryName: string): MediaEntry | null;
   /** Ask for one file. Idempotent: a second call for a known entry does nothing. */
@@ -44,7 +49,19 @@ export interface MediaStore {
   subscribe(listener: () => void): () => void;
   /** A counter that changes when any entry changed, for `useSyncExternalStore`. */
   getVersion(): number;
-  /** Revoke every URL this store created. Safe to call twice. */
+  /**
+   * Revoke every URL this store created and forget every entry. Safe to call
+   * twice, and **not terminal**: a store that is still referenced works again
+   * afterwards, re-extracting on the next `request`.
+   *
+   * That is deliberate, and it is the fix for Sprint 7 BUG-1. React 19
+   * StrictMode runs every effect's setup, cleanup and setup again in
+   * development, so a cleanup that bricked the store killed every media request
+   * before it ran: images, video, voice notes and stickers all stayed on their
+   * pending box under `npm run dev` while the production build was fine. A
+   * cleanup is not a promise that the resource is finished with, so it must not
+   * be treated as one.
+   */
   dispose(): void;
 }
 
@@ -73,13 +90,22 @@ export function createMediaStore(
 
   /** Every known entry, whether or not it currently holds a URL. */
   const entries = new Map<string, MediaEntry>();
+  /**
+   * The newest in-flight request per entry name. A result is only allowed to
+   * land when its token is still the current one, which is what makes a
+   * `dispose()` during a flight drop the stale bytes instead of writing a URL
+   * nothing will ever revoke. StrictMode's setup/cleanup/setup pair would
+   * otherwise issue two extractions for one file and leak the first URL
+   * (Sprint 7 BUG-1).
+   */
+  const tokens = new Map<string, number>();
+  let nextToken = 1;
   /** The live URLs in read-recency order: the first key is the next eviction.
    *  Only `ready` entries are in here, which is what makes "never evict an
    *  extraction still in flight" automatic rather than a special case. */
   const live = new Map<string, ReadyEntry>();
   const listeners = new Set<() => void>();
   let version = 0;
-  let disposed = false;
 
   function notify(): void {
     version += 1;
@@ -127,8 +153,6 @@ export function createMediaStore(
   }
 
   function request(ref: MediaRef): void {
-    if (disposed) return;
-
     const name = ref.entryName;
     // Idempotent: a known name is never asked for twice, in flight or landed.
     if (entries.has(name)) return;
@@ -144,10 +168,15 @@ export function createMediaStore(
       return;
     }
 
+    const token = nextToken++;
+    tokens.set(name, token);
+    /** True while this request is still the current one for `name`. */
+    const current = () => tokens.get(name) === token;
+
     const mimeType = ref.mimeType;
     void session.extract(name).then(
       (blob) => {
-        if (disposed || entries.get(name)?.status !== 'loading') return;
+        if (!current() || entries.get(name)?.status !== 'loading') return;
         if (blob === null) {
           setEntry(name, { status: 'unavailable' });
           return;
@@ -158,7 +187,7 @@ export function createMediaStore(
         // A closed session is the normal case here (F-NAV-6): the row shows the
         // "cannot be shown" tile. Swallowed on purpose, so a rejection the user
         // did not cause never reaches the console as an unhandled one.
-        if (disposed || entries.get(name)?.status !== 'loading') return;
+        if (!current() || entries.get(name)?.status !== 'loading') return;
         setEntry(name, { status: 'error' });
       },
     );
@@ -172,13 +201,14 @@ export function createMediaStore(
   }
 
   function dispose(): void {
-    if (disposed) return;
-    disposed = true;
+    // Invalidate every in-flight request: a result that was on the wire when
+    // this ran must not land on the store after it (BUG-1's symmetric half).
+    tokens.clear();
     for (const entry of live.values()) URL.revokeObjectURL(entry.url);
     live.clear();
     entries.clear();
     notify();
   }
 
-  return { get, request, subscribe, getVersion: () => version, dispose };
+  return { session, get, request, subscribe, getVersion: () => version, dispose };
 }

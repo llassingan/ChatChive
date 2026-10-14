@@ -1,0 +1,222 @@
+/*
+  Search in chat (E7-1; PRD F-NAV-2, DESIGN §3.37).
+
+  Two placements, one component: `--panel` is the desktop column and `--header`
+  is the mobile field that replaces the header's title row. The shell decides
+  which by viewport (`ChatView.css`), so no JS breakpoint is involved, matching
+  the single 768px boundary the rest of the app uses.
+
+  Colours come from the existing token set: the field is the `--bg-input`
+  surface DESIGN §3.37 names, the counter and the meta line are `--text-secondary`,
+  and the active row is `--bg-list-active` with a `--border-strong` edge, the
+  pair `MePicker.css` already uses for a chosen row.
+*/
+
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* The desktop column. It is a real flex sibling of the message list, never an
+   overlay: the list keeps its full width minus this column, which is what
+   "the message list must not be covered" means geometrically. `flex: 0 0 auto`
+   with a fixed width, so a long result list scrolls inside the column instead
+   of stealing width from the messages. */
+.search-panel--panel {
+  flex: 0 0 360px;
+  width: 360px;
+  border-left: 1px solid var(--divider);
+  background: var(--bg-panel);
+}
+
+/* The field row, shared by both placements. 40px tall with a 20px radius is
+   DESIGN §3.37's search field, and the input itself is the control that grows:
+   the buttons keep their 44px touch box (R-32). */
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 0 0 auto;
+  min-height: var(--size-header);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--divider);
+}
+
+.search-field__glyph {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+}
+
+.search-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0 var(--space-6);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--fs-handle);
+}
+
+.search-field__input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* The counter. `min-width` reserves room for the widest short form ("17 of
+   17"), so the row does not shuffle horizontally as the count changes.
+   `font-variant-numeric` keeps the digits from changing width as they tick. */
+.search-field__counter {
+  flex: 0 0 auto;
+  min-width: 62px;
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.search-field__steps {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+/* The step buttons carry the shared `.icon-button` box (44px). Two of them in a
+   row would make the field too wide for a 360px phone header alongside the
+   input, so they shrink to 34px here; still above the 24px pointer-target
+   floor of WCAG 2.5.8 and inside a row that is 52px tall. */
+.search-field__step {
+  width: 34px;
+  height: 34px;
+}
+
+.search-field__step:disabled {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+
+.search-field__step:disabled:hover {
+  background: none;
+}
+
+.search-field__close {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+}
+
+/* The result list. It scrolls on its own, so a chat with hundreds of hits never
+   grows the column and never pushes the message list's own scroll container. */
+.search-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.search-panel__hint,
+.search-panel__empty {
+  margin: 0;
+  padding: var(--space-7) var(--space-6);
+  color: var(--text-secondary);
+  font-size: var(--fs-handle);
+}
+
+.search-panel__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One result. 44px floor and full width, like the picker's rows. */
+.search-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-4) var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-panel__row:hover {
+  background: var(--bg-list-hover);
+}
+
+/* The row the selection is on. Border and fill both change, so the state is not
+   carried by colour alone (WCAG 1.4.1). */
+.search-panel__row[data-active='true'] {
+  border-color: var(--border-strong);
+  background: var(--bg-list-active);
+}
+
+.search-panel__meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  font-size: var(--fs-timestamp);
+  color: var(--text-secondary);
+}
+
+.search-panel__sender {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.search-panel__time {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.search-panel__snippet {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--fs-handle);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* The match inside a snippet, so the panel reads like the list it points at. */
+.search-panel__snippet strong {
+  font-weight: var(--fw-semibold);
+}
+
+/* A hit that was only the sender's name has no body to quote. Saying so is
+   more honest than printing the untouched body, which would read as a match. */
+.search-panel__snippet-name {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* The mobile placement: the field alone, full width, no result list. Results are
+   the message list itself, and the header's own height keeps the list below it. */
+.search-panel--header {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Below 768px the panel is the field alone. The results are the highlighted
+   messages in the list underneath, which is the only place a phone can afford to
+   show them: a 360px column beside the messages does not fit at this width, and
+   a result list stacked above them would push the matches off the screen. The
+   hint and the "no matches" line go with it: with no list there is nothing for
+   them to explain, and the field's own counter already reads "No matches". */
+@media (max-width: 767px) {
+  .search-panel__body {
+    display: none;
+  }
+}

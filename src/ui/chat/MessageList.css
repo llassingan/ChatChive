@@ -37,6 +37,41 @@
   width: 100%;
 }
 
+/* Run spacing (DESIGN §3.2, §1.4). This is `padding-top` on the virtual item,
+   not a margin between rows, for two reasons found in Sprint 7 BUG-3:
+     1. `.row + .row` (the previous selector, in MessageRow.css) never matched,
+        because each row is alone inside its own absolutely-positioned item, so
+        every bubble touched its neighbour and runs read as one block.
+     2. The virtualizer measures `offsetHeight`, which *excludes* margin but
+        *includes* padding. A measured probe confirmed it: a 20px `margin` on the
+        item left gaps of 20px while the item height stayed put, and a 20px
+        `padding-top` grew the item height by 20 and the gap by 40 (the adjacent
+        pair). Padding is the property that both creates the gap and is measured,
+        so the two stay in sync.
+   The values: 10px between runs, 3px inside a run (DESIGN §1.4 mobile column). */
+.chat-list__item[data-day] {
+  padding-top: 10px;
+}
+
+.chat-list__item[data-run='new'] {
+  padding-top: 10px;
+}
+
+.chat-list__item[data-run='same'] {
+  padding-top: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .chat-list__item[data-day],
+  .chat-list__item[data-run='new'] {
+    padding-top: 12px;
+  }
+
+  .chat-list__item[data-run='same'] {
+    padding-top: 2px;
+  }
+}
+
 /* Sticky date pill: pinned 8px under the header, above the bubbles (DESIGN §3.5).
    It stays mounted while a day is active so it can fade; `data-visible` drives
    the fade (DESIGN §3.5: 200ms, about 1.5s after scrolling stops). */

@@ -1,0 +1,160 @@
+/*
+  Jump-to-date calendar (E7-2; PRD F-NAV-3). Drawn inside the shared dialog
+  (Dialog.css), so this file only styles the month grid and its controls.
+
+  Colour: every value is an existing token, and every text/background pair below
+  is one the token file has already measured or that was measured for this
+  component (the numbers are in the E7-2 report). No new colour is introduced, so
+  no new token is added and `tokens.css` is untouched.
+
+  Motion: nothing here transitions and nothing here animates. The MOTION dial is
+  1 (no new `@keyframes`), and a grid that fades in beneath the reader's arrow
+  keys would only make the keyboard path harder to see.
+*/
+
+.jump {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.jump__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.jump__month {
+  /* The dialog's own title is one step up; the month is a value inside it, so it
+     sits at the subtitle size and stays the one element the reader looks at
+     while paging. */
+  margin: 0;
+  font-size: var(--fs-header-subtitle);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+/* Weekday headers and day cells share one template, so a column letter always
+   sits over the column of days it names. `--space-1` (2px) is what keeps a cell
+   at or above the 44px touch floor (F-RES-4) at a 390px viewport: the dialog is
+   358px wide there, 16px of body padding each side leaves 326px, and
+   7 cells + 6 x 2px = 314px of cell, or 44.9px each. */
+.jump__weekdays,
+.jump__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+
+.jump__weekday {
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+  text-align: center;
+}
+
+.jump__day {
+  position: relative;
+  /* 44px is the touch floor (F-RES-4, E6-1); the width fills whatever the column
+     gives, which is 44.9px at 390px and 71px at the dialog's widest. */
+  min-height: 44px;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  /* A day the chat has nothing on is dimmed rather than hidden: it is still a
+     real date the reader may be looking for, and the reason it cannot be chosen
+     has to be visible, not just felt (WCAG 1.4.1, and the brief's "visibly
+     disabled"). --text-secondary is the token file's AA-verified dim tone. */
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--fs-timestamp);
+  cursor: default;
+}
+
+/* A padded cell (the neighbours' days that complete the first and last week) is
+   a step further down: it is not in the month the heading names.
+
+   The tone is `--text-tertiary` pulled a quarter of the way to `--text-primary`,
+   because the raw token fails AA at this size in light mode: #8696a0 on the white
+   panel measures 3.05:1, under the 4.5:1 body-text floor. Pulled 75/25 the same
+   rule resolves to #697780 in light (4.61:1), #969696 in dark (6.07:1) and
+   #9facb4 in classic (7.51:1) — all three measured with `contrast-check.py`, all
+   three passing, and each still visibly dimmer than the `--text-secondary` an
+   in-month empty day uses. Written against tokens rather than as a literal so a
+   theme that redefines them moves this with it. */
+.jump__day[data-in-month='false'] {
+  color: color-mix(in srgb, var(--text-tertiary) 75%, var(--text-primary));
+}
+
+/* Days with messages: full-strength ink, the pointer, and a hover surface. The
+   colour is not the only signal — the dot below is the shape that says the same
+   thing, and the hint line names it. */
+.jump__day[data-has-messages='true'] {
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.jump__day[data-has-messages='true']:hover {
+  background: var(--bg-list-hover);
+}
+
+.jump__day[data-has-messages='true']:active {
+  background: var(--bg-list-active);
+}
+
+/* Today: the ring, not a fill, so it cannot be confused with the hover state and
+   cannot hide the dot. --accent-text is the token file's accent role for exactly
+   this: it clears 3:1 against the surfaces it is drawn on in all three themes
+   (WCAG 1.4.11). */
+.jump__day[data-today='true'] {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+
+/* The visible focus ring comes from the shared control language. Drawn inside the
+   cell's own outline so a focused "today" shows both rings rather than one
+   replacing the other. */
+.jump__day:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 0;
+}
+
+.jump__day-number {
+  display: block;
+  /* Room for the dot below the number without the number drifting off centre. */
+  line-height: 1.4;
+}
+
+/* The "this day has messages" mark: a shape, in the number's own colour, so the
+   signal survives a reader who cannot tell the two text tones apart. */
+.jump__dot {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.jump__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--fs-timestamp);
+}
+
+.jump__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 768px) {
+  /* The web header is taller and the type scale smaller, so the controls keep
+     their 44px boxes and the grid keeps its 44px rows (F-RES-4 is a floor, not a
+     mobile-only value). */
+  .jump__day {
+    min-height: 44px;
+  }
+}

@@ -13,6 +13,7 @@ import type { SVGProps } from 'react';
 export type IconName =
   | 'chevron-left'
   | 'chevron-down'
+  | 'chevron-up'
   | 'search'
   | 'send'
   | 'close'
@@ -31,10 +32,15 @@ export type IconName =
   | 'people'
   | 'play'
   | 'pause'
-  | 'download';
+  | 'download'
+  // E7-2 (jump to date): the month stepper's forward arrow and the header menu
+  // entry that opens the calendar.
+  | 'chevron-right'
+  | 'calendar';
 
 const PATHS: Record<IconName, string> = {
   'chevron-left': 'M15 5 8 12l7 7',
+  'chevron-up': 'M5 15l7-7 7 7',
   'chevron-down': 'M5 9l7 7 7-7',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4',
   send: 'M4 12 20 4l-4 16-4.5-6.5L4 12Z',
@@ -63,6 +69,13 @@ const PATHS: Record<IconName, string> = {
   play: 'M8.5 5.2v13.6l10.5-6.8-10.5-6.8Z',
   pause: 'M9.5 5v14M14.5 5v14',
   download: 'M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5M4.5 20.5h15',
+  // E7-2. `chevron-left` mirrored about the 12px axis, so the two arrows are one
+  // shape drawn twice rather than two hand-fitted curves.
+  'chevron-right': 'M9 5l7 7-7 7',
+  // E7-2. A month page with a binding: the shape the reader already reads as
+  // "calendar". DESIGN §1.5's glyph list has none, so this is a new addition to
+  // it rather than one of the listed shapes.
+  calendar: 'M4.5 5.5h15v15h-15v-15ZM4.5 9.5h15M8.5 3.5v4M15.5 3.5v4',
 };
 
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {

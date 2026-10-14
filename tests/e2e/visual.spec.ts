@@ -104,6 +104,12 @@ test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
 async function openChat(page: Page, chatCase: ChatCase): Promise<void> {
   await page.setViewportSize({ width: chatCase.width, height: chatCase.height });
+  // The system preference is what "no stored choice" resolves against (E7-3,
+  // added in Sprint 7): the app follows `prefers-color-scheme` until the reader
+  // picks otherwise. The dark cases therefore emulate a dark OS so the default
+  // theme is dark, and the light cases emulate a light OS, so neither depends on
+  // the machine the suite happens to run on.
+  await page.emulateMedia({ colorScheme: chatCase.theme === 'light' ? 'light' : 'dark' });
   if (chatCase.theme) {
     // An init script runs before the parser has built the root element, so
     // `document.documentElement` is null there and assigning to it throws

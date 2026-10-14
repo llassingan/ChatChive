@@ -38,6 +38,16 @@
   --bubble-out: #144d37;
   --quote-in: #1b1d1d;
   --quote-out: #0f3d2c;
+
+  /* ---- Color: search highlight (E7-1, F-NAV-2) ----
+     A translucent wash over the message bubble, so the matched word reads as
+     part of the bubble it sits in. The alpha is what is chosen; the composite
+     depends on the bubble it lands on, and the measured values for dark are in
+     `src/ui/chat/FormattedText.css`. Light needs a solid value instead (its
+     bubbles are near-white) and gets one in its own block below. */
+  --search-hit: rgba(255, 214, 0, 0.35);
+  --search-hit-active: rgba(255, 214, 0, 0.65);
+  --search-hit-ring: rgba(255, 255, 255, 0.85);
   --card-inner: #1b1d1d;
   --icon-circle: #141515;
 
@@ -354,6 +364,14 @@
   --pill-text: #111b21;
   --pill-text-secondary: #54646d;
   --notice-encryption: #8a6400;
+
+  /* Search highlight (E7-1). Dark's translucent wash is invisible on a
+     near-white bubble (`rgba(255,214,0,0.35)` over #FFFFFF is 1.14:1), so light
+     uses the solid DESIGN §3.37 value with a dark ring, which also keeps the
+     active match distinct from the other matches by more than one property. */
+  --search-hit: #fff5ab;
+  --search-hit-active: #ffdf4d;
+  --search-hit-ring: #111b21;
 }
 
 @media (min-width: 768px) {
@@ -418,6 +436,11 @@
 
   /* Sender hue nudged for AA on --bubble-in #202C33 (DESIGN §1.2). */
   --sender-10: #9580ff;
+
+  /* Search highlight (E7-1): classic shares dark's wash, which reads on its
+     mid-dark bubbles, but its ring is the light-theme value because classic's
+     surfaces are dark and a white ring would sit oddly on them. */
+  --search-hit-ring: rgba(233, 237, 239, 0.85);
 
   --shadow-bubble: none;
 }

@@ -298,9 +298,10 @@ test.describe('mobile shell verification (E6-1)', () => {
     // assertions rather than one-shot `boundingBox()` reads, because the
     // header's layout settles a frame or two after the chat mounts and a single
     // measurement taken in that window was intermittently flaky on WebKit.
+    // Three header controls since E7-1: Back, Search and the menu summary.
     const icons = page.locator('.chat__header .icon-button');
-    await expect(icons).toHaveCount(2);
-    for (let index = 0; index < 2; index += 1) {
+    await expect(icons).toHaveCount(3);
+    for (let index = 0; index < 3; index += 1) {
       await expect
         .poll(async () => {
           const box = await icons.nth(index).boundingBox();
@@ -312,9 +313,10 @@ test.describe('mobile shell verification (E6-1)', () => {
     // The rows only have a box while the dropdown is open. They used to measure
     // 42px, which QA recorded as F-1 against this floor; they now carry a
     // `min-height: 44px` (ChatView.css) and so assert the same 44 as the icons.
+    // Four rows since E7 (search, who-you-are, jump to date, close).
     await page.locator('.chat__header summary').click();
     const menuItems = page.locator('.chat__header .chat__menu-item');
-    await expect(menuItems).toHaveCount(2);
+    await expect(menuItems).toHaveCount(4);
     for (const item of await menuItems.all()) {
       await expect
         .poll(async () => {

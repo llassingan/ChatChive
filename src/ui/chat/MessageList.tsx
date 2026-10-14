@@ -13,8 +13,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ChatSession } from '../../parser/client.ts';
 import type { Chat, MediaMessage } from '../../types/chat.ts';
-import { createMediaStore } from '../media/store.ts';
+import { createMediaStore, type MediaStore } from '../media/store.ts';
 import { formatText } from '../formatText.ts';
+import { dayKey } from '../format.ts';
 import { Icon } from '../icons/index.ts';
 import {
   activeDayLabel,
@@ -25,8 +26,23 @@ import {
   type ChatRow,
   type MessageRow,
 } from './layout.ts';
+import type { MessageSearch, SearchResults } from './search.ts';
 import { MessageRow as MessageRowView } from './MessageRow.tsx';
 import './MessageList.css';
+
+/**
+ * The search state the list renders and scrolls for (E7-1).
+ *
+ * The query itself is not here: the list never matches anything, it draws the
+ * highlights `search.ts` already worked out and moves the reader to the match
+ * the view selected. That split is what keeps the counter and the highlights
+ * from disagreeing, and it keeps the matching rules unit-testable.
+ */
+export interface MessageListSearch {
+  results: SearchResults;
+  /** Index into `results.matches`, or -1 when there is no selection yet. */
+  activeIndex: number;
+}
 
 export interface MessageListProps {
   chat: Chat;
@@ -37,6 +53,31 @@ export interface MessageListProps {
    * still render the list, in which case every media row shows its placeholder.
    */
   session: ChatSession | null;
+  /** Live search state, or absent/null when no query is running (E7-1). */
+  search?: MessageListSearch | null | undefined;
+  /**
+   * The day the calendar asked for (E7-2), as `format.ts`'s `dayKey`, or null
+   * when nothing has been asked for. A request rather than a position: the list
+   * is the only thing that knows its row indices, so the view says *which day*
+   * and the list works out where that is.
+   *
+   * Repeating a request for the same day after scrolling away has to scroll
+   * again, which is why the value is paired with a sequence number in
+   * `MessageListJump` rather than being a bare string.
+   */
+  jump?: MessageListJump | null | undefined;
+}
+
+/** A pending "jump to this day" request (E7-2): the day, and which ask it was. */
+export interface MessageListJump {
+  /** The day to land on, as `dayKey`. */
+  day: string;
+  /**
+   * Bumped by the caller on every request, including a repeat of the same day.
+   * Without it, picking the same date twice would be a no-op the second time,
+   * because React would see an unchanged prop.
+   */
+  seq: number;
 }
 
 /**
@@ -131,19 +172,56 @@ function estimateMedia(row: MediaMessage): number {
 function estimateOf(row: ChatRow): number {
   return row.type === 'day' ? 52 : estimateRow(row.message);
 }
-
-export function MessageList({ chat, session }: MessageListProps) {
+export function MessageList({ chat, session, search = null, jump = null }: MessageListProps) {
   const rows = useMemo(() => buildRows(chat), [chat]);
   const dayLabels = useMemo(() => dayLabelByIndex(rows), [rows]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // One store for the mounted chat (E5-1). `session` is a live object with
-  // methods, so it is created once per session and never per render (§2.4).
-  const store = useMemo(() => createMediaStore(session), [session]);
+  // Message index -> row index, so a search hit (which is a message) can be
+  // turned into a virtualizer index (which is a row). Built once per rows
+  // change: the day separators sit between the messages, so the two indices
+  // drift apart by the number of days above, and scanning for each step would
+  // be O(n) per prev/next press.
+  const rowByMessage = useMemo(() => {
+    const map = new Map<number, number>();
+    rows.forEach((row, index) => {
+      if (row.type === 'message') map.set(row.messageIndex, index);
+    });
+    return map;
+  }, [rows]);
+
+  // One store for the mounted chat (E5-1), kept in a ref so it survives a
+  // StrictMode double-invoke. The previous `useMemo` + `useEffect(() => () =>
+  // store.dispose(), [store])` pair disposed the store on the development
+  // cleanup and never recreated it, so every media request was skipped and the
+  // whole chat showed blank boxes under `npm run dev` (Sprint 7 BUG-1). A ref
+  // also makes the store stable across a `session` identity change within one
+  // mount, which is what the rows' memo comparison wants.
+  const storeRef = useRef<MediaStore | null>(null);
+  if (storeRef.current === null) storeRef.current = createMediaStore(session);
+  const store = storeRef.current;
+
+  // Re-point the store when a genuinely different session arrives (open another
+  // chat in the same view). This is the one place a store is legitimately
+  // replaced; the ref above keeps the common mount cheap.
+  useEffect(() => {
+    if (storeRef.current?.session === session) return;
+    storeRef.current?.dispose();
+    storeRef.current = createMediaStore(session);
+  }, [session]);
+
   // The version counter is the snapshot: it changes only when an entry did, so
   // React re-renders the list once per landed file, not once per request.
   useSyncExternalStore(store.subscribe, store.getVersion);
-  useEffect(() => () => store.dispose(), [store]);
+  // Revoke every URL on unmount (F-NAV-6). No dependency array: the ref is
+  // always current, and this must fire exactly once, on the real teardown.
+  useEffect(
+    () => () => {
+      storeRef.current?.dispose();
+      storeRef.current = null;
+    },
+    [],
+  );
 
   const count = rows.length;
   const virtualizer = useVirtualizer({
@@ -236,6 +314,14 @@ export function MessageList({ chat, session }: MessageListProps) {
     let frame = 0;
     let quiet = 0;
     let previousHeight = -1;
+    // Whether the list has actually reached the bottom at least once. The
+    // frame bound below only becomes a valid exit after this is true; until
+    // then the pin keeps writing, which is the F-1 fix. Sprint 6's independent
+    // QA measured the old behaviour: `PIN_FRAMES = 120` could expire under
+    // 4-way parallel load before the last layout stage, leaving the list 27px
+    // short with no scroll-to-bottom button (so `atBottom` stayed true, and
+    // nothing re-armed the pin).
+    let arrived = false;
     const pin = () => {
       if (!pinActive.current) return;
       const element = scrollRef.current;
@@ -245,12 +331,26 @@ export function MessageList({ chat, session }: MessageListProps) {
       const height = element?.scrollHeight ?? -1;
       quiet = height === previousHeight ? quiet + 1 : 0;
       previousHeight = height;
-      if (element) element.scrollTop = element.scrollHeight;
-      // Settled: the height has held still for long enough that no further
-      // stage is pending, and the write above has already reached the bottom of
-      // that final height. `PIN_FRAMES` remains as a bound for a list that never
-      // stops growing, so this cannot loop forever.
-      if (quiet >= PIN_SETTLE_FRAMES || ++frame >= PIN_FRAMES) {
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+        // Arrived when the write above actually reached the bottom: the scroll
+        // position is clamped to `scrollHeight - clientHeight`, so the equality
+        // holds only when there is no more to scroll. A 1px tolerance absorbs
+        // sub-pixel layout rounding.
+        const restingDistance = element.scrollHeight - element.scrollTop - element.clientHeight;
+        if (restingDistance <= 1) arrived = true;
+      }
+      // Two exits, and the order matters. The first is the real one: the height
+      // held still long enough that no further stage is pending, and the write
+      // above already reached the bottom of that final height. The second is the
+      // safety bound, and it is only allowed to fire *after* the list reached the
+      // bottom at least once. Before arrival it is ignored, because a load-induced
+      // stall must not be mistaken for a settled list: Sprint 6's independent QA
+      // measured `PIN_FRAMES = 120` expiring first under 4-way parallel load,
+      // leaving the list 27px short with no scroll-to-bottom button (F-1). The
+      // `arrived` flag is what keeps the bound from firing early, without removing
+      // it: a list that truly never arrives is still bounded by `frame`.
+      if ((arrived && quiet >= PIN_SETTLE_FRAMES) || (arrived && ++frame >= PIN_FRAMES)) {
         pinActive.current = false;
         return;
       }
@@ -262,6 +362,73 @@ export function MessageList({ chat, session }: MessageListProps) {
     // mounts and adds its height, this effect re-runs and the pin restarts
     // against the new height. See the note above.
   }, [atBottom, releasePin, pillMounted]);
+
+  // Move the reader to the selected match (E7-1). The row it lives in may not be
+  // mounted at all — that is the whole point of a virtualized list — so this
+  // asks the virtualizer for the offset rather than looking for a DOM node by
+  // id. `releasePin` first: the arrival pin below would otherwise rewrite the
+  // position on its next frame and yank the reader back to the newest message.
+  const activeMatch = search === null ? undefined : search.results.matches[search.activeIndex];
+  const activeRow =
+    activeMatch === undefined ? undefined : rowByMessage.get(activeMatch.messageIndex);
+  useEffect(() => {
+    if (activeRow === undefined) return;
+    releasePin();
+    setAtBottom(false);
+    // `align: 'center'` puts the match in the middle of the viewport, so a hit
+    // near either edge still arrives with context above and below it rather
+    // than against the header or the footer.
+    virtualizer.scrollToIndex(activeRow, { align: 'center' });
+    // The row is measured after it mounts, and its real height can differ from
+    // the seed by a hundred pixels (a media row, a fenced block), which moves
+    // the target. One second pass against the corrected measurements is what
+    // makes the arrival exact instead of approximately right.
+    const frame = requestAnimationFrame(() => {
+      virtualizer.scrollToIndex(activeRow, { align: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeRow, virtualizer, releasePin]);
+
+  // Move the reader to the first message of a chosen day (E7-2). Same rule as the
+  // search jump above, and for the same reason: the row is a virtualizer index,
+  // not a node, so it is asked for the offset. `align: 'start'` rather than
+  // 'center' because the promise the calendar makes is "the first message of that
+  // day", and the first message reads as the first thing on screen.
+  //
+  // The row is found by scanning the rows this list already holds rather than by
+  // re-deriving the day-to-row rule from the messages: the calendar and the list
+  // then cannot disagree about which index a day starts at, and there is no
+  // second copy of `buildRows`' separator rule to keep in step. The scan runs on
+  // a pick, not per row per frame, so its cost is paid on a click.
+  // Destructured out of the request so the effect can depend on the two plain
+  // values it actually reads. Depending on the request object itself would
+  // re-run whenever a parent rebuilt it; depending only on `jumpRow` would miss
+  // the reader picking the same day a second time, because the row is then the
+  // number it already was. The sequence number is what makes that second pick a
+  // new event rather than an identical render.
+  const jumpDay = jump === null ? null : jump.day;
+  const jumpSeq = jump === null ? 0 : jump.seq;
+  const jumpRow = useMemo(() => {
+    if (jumpDay === null) return undefined;
+    const index = rows.findIndex(
+      (row) =>
+        row.type === 'message' && row.firstOfDay && dayKey(row.message.timestamp) === jumpDay,
+    );
+    return index === -1 ? undefined : index;
+  }, [rows, jumpDay]);
+
+  useEffect(() => {
+    if (jumpRow === undefined) return;
+    releasePin();
+    setAtBottom(false);
+    virtualizer.scrollToIndex(jumpRow, { align: 'start' });
+    // The same second pass the search jump needs: rows are measured once they
+    // mount, and a height that differs from its seed moves the target.
+    const frame = requestAnimationFrame(() => {
+      virtualizer.scrollToIndex(jumpRow, { align: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [jumpRow, jumpSeq, virtualizer, releasePin]);
 
   // Scroll bookkeeping, throttled to one pass per animation frame. A scroll
   // gesture fires several events per frame, and each pass re-renders the list
@@ -357,11 +524,33 @@ export function MessageList({ chat, session }: MessageListProps) {
               row.type === 'message' && row.message.kind === 'media'
                 ? store.get(row.message.media.entryName)
                 : null;
+            // This row's search highlights, or null when the query does not
+            // touch it. Read from the map rather than filtered out of the match
+            // list per row, which would be O(matches) per mounted row per frame.
+            const hit: MessageSearch | null =
+              row.type === 'message'
+                ? (search?.results.byMessage.get(row.messageIndex) ?? null)
+                : null;
+            // The selected match is handed down whole: it is structurally an
+            // `ActiveHighlight`, so the row can compare it against the run it is
+            // about to draw without a conversion step in between. The message
+            // check is what keeps a selected match from marking a row it is not
+            // in when `activeRow` happens to be stale for a frame.
+            const activeHit =
+              activeMatch !== undefined &&
+              row.type === 'message' &&
+              activeMatch.messageIndex === row.messageIndex
+                ? activeMatch
+                : null;
             return (
               <div
                 key={row.key}
                 className="chat-list__item"
                 data-index={item.index}
+                {...(row.type === 'day'
+                  ? { 'data-day': '' }
+                  : { 'data-run': row.firstOfRun ? 'new' : 'same' })}
+                {...(activeHit === null ? {} : { 'data-match': 'active' })}
                 ref={virtualizer.measureElement}
                 style={{ transform: `translateY(${item.start}px)` }}
               >
@@ -378,6 +567,8 @@ export function MessageList({ chat, session }: MessageListProps) {
                     firstOfRun={row.firstOfRun}
                     lastOfRun={row.lastOfRun}
                     mediaEntry={mediaEntry}
+                    highlight={hit}
+                    {...(activeHit === null ? {} : { activeMatch: activeHit })}
                   />
                 )}
               </div>

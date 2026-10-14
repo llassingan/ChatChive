@@ -12,12 +12,16 @@ export interface TailProps {
 }
 
 const PATHS: Record<TailProps['corner'], string> = {
-  // Swoosh: leaves the bottom edge and curves out to the outer side.
-  'bottom-left': 'M8 0C8 5.5 6.2 10.4 0 13V0Z',
-  'bottom-right': 'M0 0C0 5.5 1.8 10.4 8 13V0Z',
-  // Nub: a sharp triangle at the top outer corner.
-  'top-left': 'M8 13C4.5 9.2 2.4 5 0 0H8Z',
-  'top-right': 'M0 13C3.5 9.2 5.6 5 8 0H0Z',
+  // Swoosh (mobile, bottom corner): the flat edge is the whole right side
+  // (`x=8`, the `V0Z` closing line), so the shape welds to the 13px squared
+  // corner rather than hanging off it (Sprint 7 BUG-2). The curve leaves the
+  // top of that edge and sweeps out to the outer bottom tip.
+  'bottom-left': 'M8 0V13C3.4 12.2 0.9 8.4 0 2.6Z',
+  'bottom-right': 'M0 0V13C4.6 12.2 7.1 8.4 8 2.6Z',
+  // Nub (web, top corner): the flat edge is `y=0` across the full width, welded
+  // to the squared top corner, tapering down to a point at the outer bottom.
+  'top-left': 'M0 0H8V13C4.8 9.4 2 5.2 0 0Z',
+  'top-right': 'M0 0H8V13C3.2 9.4 6 5.2 8 0Z',
 };
 
 export function Tail({ corner }: TailProps) {

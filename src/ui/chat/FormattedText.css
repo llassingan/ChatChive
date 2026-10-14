@@ -135,3 +135,28 @@
 .bubble__jumbo--3 {
   font-size: var(--fs-emoji-jumbo-3);
 }
+
+/* Search-hit colours (E7-1) live in `tokens.css` with the other theme-scoped
+   values: `--search-hit`, `--search-hit-active`, `--search-hit-ring`, defined
+   for dark (`:root`), light and classic. The composite measurements that chose
+   them are in the report for this story. */
+
+/* The highlight itself (E7-1, PRD F-NAV-2). `color: inherit` is load-bearing:
+   a highlight inside a link or inside bold text keeps the colour and the weight
+   that element gave it, so the match reads as part of the word it sits in
+   rather than punching a hole in it. `<mark>` is the browser's own "highlighted
+   run" element, so the match is announced as highlighted with no ARIA; its
+   default black-on-yellow is what this rule overrides. */
+.bubble__mark {
+  border-radius: 3px;
+  background: var(--search-hit);
+  color: inherit;
+}
+
+/* The match prev/next is standing on. It gets a stronger fill than the other
+   matches plus a ring, so "a match" and "the match you are standing on" differ
+   by more than one property in every theme. */
+.bubble__mark[data-active='true'] {
+  background: var(--search-hit-active);
+  box-shadow: 0 0 0 1px var(--search-hit-ring);
+}

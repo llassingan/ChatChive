@@ -352,14 +352,19 @@ describe('rule 4: nothing throws, whatever the archive answers', () => {
     }
   });
 
-  it('ignores a request made after dispose', () => {
+  it('still answers a request made after a dispose, because dispose is not terminal', async () => {
+    // Sprint 7 BUG-1 reversed this. A cleanup (StrictMode's spurious one
+    // included) used to brick the store, which is exactly the failure mode the
+    // whole media path had under `npm run dev`. A store that is still held is
+    // still usable, and it re-extracts on the next request.
     const { session, calls } = resolvingSession(() => Promise.resolve(untyped()));
     const store = createMediaStore(session);
 
     store.dispose();
     store.request(ref('a'));
-    expect(calls).toEqual([]);
-    expect(store.get('a')).toBeNull();
+    expect(calls).toEqual(['a']);
+    await flush();
+    expect(store.get('a')).toEqual({ status: 'ready', url: createdUrls[0] });
   });
 });
 
@@ -379,7 +384,10 @@ describe('rule 5: dispose', () => {
     expect(revokedUrls).toEqual(createdUrls);
   });
 
-  it('drops an extraction that lands after the close, creating no URL', async () => {
+  it('drops an extraction that lands after a dispose, creating no URL', async () => {
+    // The stale half of BUG-1: a flight on the wire when `dispose` runs must be
+    // dropped, not written into a store that has since been reset, or its URL
+    // would leak. The store still answers the *next* request (previous test).
     const gate = deferred();
     const store = createMediaStore(makeSession(() => gate.promise));
 
@@ -405,6 +413,21 @@ describe('rule 5: dispose', () => {
     const before = notified;
     store.dispose();
     expect(notified).toBe(before + 1);
+  });
+
+  it('stays usable after a dispose, because a cleanup is not a teardown', async () => {
+    // Sprint 7 BUG-1: React 19 StrictMode runs setup, cleanup, setup. The store
+    // must answer the second setup, not stay empty forever.
+    const { session } = resolvingSession(() => Promise.resolve(untyped()));
+    const store = createMediaStore(session);
+
+    store.request(ref('a'));
+    await flush();
+    store.dispose();
+
+    store.request(ref('a'));
+    await flush();
+    expect(store.get('a')).toEqual({ status: 'ready', url: createdUrls[1] });
   });
 
   it('a store created after another one was disposed is unaffected', async () => {

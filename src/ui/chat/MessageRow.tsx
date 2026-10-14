@@ -11,7 +11,7 @@
  * emits text nodes. The bubble's aria-label hears the plain-text variant, so a
  * screen reader never reads an asterisk aloud (DESIGN §5).
  */
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, type ReactNode } from 'react';
 import type {
   ClockStyle,
   MediaKind,
@@ -24,9 +24,10 @@ import { isJumboEmoji, toPlainText } from '../formatText.ts';
 import { formatClock } from '../format.ts';
 import { Icon } from '../icons/index.ts';
 import { MEDIA_META } from './mediaMeta.ts';
-import { FormattedText } from './FormattedText.tsx';
 import type { MediaShape } from './media/shape.ts';
 import { Tail } from './Tail.tsx';
+import { FormattedText } from './FormattedText.tsx';
+import type { MessageSearch, Range, SearchMatch } from './search.ts';
 import { DocumentBody } from './media/DocumentBody.tsx';
 import { ImageBody } from './media/ImageBody.tsx';
 import { MediaFallback, MediaPending } from './media/MediaFallback.tsx';
@@ -35,6 +36,20 @@ import { VideoBody } from './media/VideoBody.tsx';
 import { VoiceBody } from './media/VoiceBody.tsx';
 import './MessageRow.css';
 import './media/media.css';
+
+/**
+ * The highlight runs for a body string, or undefined when the search did not
+ * touch it.
+ *
+ * The guard is the `text` identity: a message's highlights are stored against
+ * the exact string they were computed from, so a row passes them down only when
+ * the string it is about to render *is* that string. Nothing here re-derives
+ * which field matched, which is what keeps the panel's snippets and the
+ * bubble's marks reading from one result set.
+ */
+function runsForBody(highlight: MessageSearch | null, text: string) {
+  return highlight?.body?.text === text ? highlight.body.runs : undefined;
+}
 
 export interface MessageRowProps {
   message: Message;
@@ -54,6 +69,14 @@ export interface MessageRowProps {
    * the entry's status changes, which is what keeps `memo` cheap (plan §2.5).
    */
   mediaEntry: MediaEntry | null;
+  /**
+   * This row's search highlights (E7-1), or null/absent when the query does not
+   * touch it. Passed straight through to `FormattedText`, which splits text
+   * nodes at the ranges; the row itself only uses it to mark the active row.
+   */
+  highlight?: MessageSearch | null | undefined;
+  /** The match prev/next is standing on, when it is in this row (E7-1). */
+  activeMatch?: SearchMatch | null | undefined;
 }
 
 /** Letter avatar for a participant, in their hue (DESIGN §3.4). */
@@ -66,19 +89,58 @@ export function Avatar({ participant }: { participant: Participant }) {
   );
 }
 
-/** Sender header: the name in its sender color, the phone for unsaved contacts. */
-function SenderHeader({ participant }: { participant: Participant }) {
+/**
+ * Sender header: the name in its sender color, the phone for unsaved contacts.
+ *
+ * A search hit on the name highlights it in place (E7-1). The ranges are
+ * computed from `displayName`, so they index the same string this prints, and
+ * the name keeps its sender tint around the mark.
+ */
+function SenderHeader({
+  participant,
+  ranges,
+  active,
+}: {
+  participant: Participant;
+  ranges: Range[] | null;
+  active: Range | null;
+}) {
   const tint = `var(--sender-${participant.colorIndex})`;
   return (
     <div className="sender">
       <span className="sender__name" style={{ color: tint }}>
-        {participant.displayName}
+        {highlightRanges(participant.displayName, ranges, active)}
       </span>
       {participant.phoneNumber ? (
         <span className="sender__phone">{participant.phoneNumber}</span>
       ) : null}
     </div>
   );
+}
+
+/**
+ * Split a string at the given ranges into text plus `<mark>` runs. Kept here
+ * (rather than shared with `FormattedText`) because the sender name is plain
+ * text with no tokens to preserve: `FormattedText`'s version exists to keep the
+ * formatter's elements intact, and a name has none.
+ */
+function highlightRanges(value: string, ranges: Range[] | null, active: Range | null): ReactNode {
+  if (ranges === null || ranges.length === 0) return value;
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    if (range.start >= value.length || range.end <= cursor) continue;
+    if (range.start > cursor) nodes.push(value.slice(cursor, range.start));
+    const isActive = active !== null && active.start === range.start && active.end === range.end;
+    nodes.push(
+      <mark className="bubble__mark" data-active={isActive ? 'true' : undefined} key={range.start}>
+        {value.slice(range.start, range.end)}
+      </mark>,
+    );
+    cursor = range.end;
+  }
+  if (cursor < value.length) nodes.push(value.slice(cursor));
+  return nodes;
 }
 
 /** Meta block: optional "Edited", the clock, and a glyph for non-document media. */
@@ -276,6 +338,8 @@ export const MessageRow = memo(function MessageRow({
   firstOfRun,
   lastOfRun,
   mediaEntry,
+  highlight = null,
+  activeMatch = null,
 }: MessageRowProps) {
   // What the media body actually painted, reported up by `MediaBody`. It must
   // be declared before the system-notice early return below: a hook cannot sit
@@ -379,10 +443,25 @@ export const MessageRow = memo(function MessageRow({
         {/* The body is hidden from assistive tech so the bubble's label is not
             read twice, except on a row that renders a real control (§3.6). */}
         <div className="bubble__content" aria-hidden={hasControl ? undefined : true}>
-          {showSender && participant ? <SenderHeader participant={participant} /> : null}
+          {showSender && participant ? (
+            // The name is a field of its own, so a name-only hit has no body run
+            // to live in: it is highlighted here instead. `active` is passed
+            // only when the selected match is the name match, which its missing
+            // `blockIndex` identifies.
+            <SenderHeader
+              participant={participant}
+              ranges={highlight?.sender ?? null}
+              active={activeMatch?.field === 'sender' ? activeMatch : null}
+            />
+          ) : null}
 
           {message.kind === 'text' ? (
-            <FormattedText text={message.text} outgoing={outgoing} />
+            <FormattedText
+              text={message.text}
+              outgoing={outgoing}
+              runs={runsForBody(highlight, message.text)}
+              active={activeMatch}
+            />
           ) : null}
 
           {message.kind === 'media' ? (
@@ -394,7 +473,12 @@ export const MessageRow = memo(function MessageRow({
                 onDegrade={degradeMedia}
               />
               {message.caption ? (
-                <FormattedText text={message.caption} outgoing={outgoing} />
+                <FormattedText
+                  text={message.caption}
+                  outgoing={outgoing}
+                  runs={runsForBody(highlight, message.caption)}
+                  active={activeMatch}
+                />
               ) : null}
             </>
           ) : null}
@@ -407,7 +491,20 @@ export const MessageRow = memo(function MessageRow({
           ) : null}
 
           {message.kind === 'empty' ? (
-            <span className="bubble__empty">Message not included in export</span>
+            // The export writes nothing for several message types, and it does
+            // not say which. The owner's report (Sprint 7 BUG-4) shows the most
+            // confusing one: a call log, `10/11/26, 14:14 - Contact:` with no
+            // body, which used to read as a blank chat bubble. This states what
+            // is true (the body is not in the export) and names the likely
+            // causes, calls included, without claiming it *is* a call: the
+            // `.txt` cannot tell a call from a view-once photo or a poll.
+            <span className="bubble__empty">
+              <span className="bubble__empty-title">Message not included in export</span>
+              <span className="bubble__empty-note">
+                Often a call, a view-once photo, or a message WhatsApp does not write to the .txt
+                export.
+              </span>
+            </span>
           ) : null}
 
           <Meta
