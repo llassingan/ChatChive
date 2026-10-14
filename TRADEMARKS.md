@@ -27,7 +27,7 @@ ChatChive is MIT-licensed, and it stays MIT. This closes the open question in
 (AGPL-3.0 or MPL-2.0) to keep forks open, and it was not chosen. MIT means forks
 may rebrand and sell, and the project accepts that trade.
 
-The reasoning, from PRD §11: the code ships to every visitor's browser in a
+The reasoning: the code ships to every visitor's browser in a
 client-side app, so hiding it is not possible and obfuscating it would work
 against the promise that a visitor can read what runs on their device. What
 actually distinguishes this project is not the license. It is the name, the
@@ -44,13 +44,11 @@ connected to WhatsApp or Meta Platforms, Inc. "WhatsApp" is a trademark of Meta
 Platforms, Inc., and this project uses the word only to describe the file format
 it reads: the plain-text export that WhatsApp itself produces.
 
-The mark was drawn for this project and does not reproduce any WhatsApp logo.
-
 ## Registration
 
 The name is not registered as a trademark, in any jurisdiction. That is a
 statement of current fact, not a plan. If the project grows, registering is worth
-considering (PRD §11 raises it), and this section changes when it happens.
+considering, and this section changes when it happens.
 
 Contact details for trademark questions are not decided yet. Until they are,
 raise the question as a GitHub issue in this repository.
