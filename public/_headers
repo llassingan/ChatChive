@@ -1,8 +1,11 @@
 # Response headers for the static host (backlog E1-4).
 #
-# Vite copies `public/` into `dist/` verbatim, and Cloudflare Pages reads
-# `_headers` from the publish directory, so this file ships as `dist/_headers`
+# Vite copies `public/` into `dist/` verbatim, so this file ships as `dist/_headers`
 # and is never served as an asset.
+#
+# `_headers` is a Cloudflare Pages / Netlify convention. The deploy host (Dokploy)
+# does not read it, so this file is the source of truth for the four headers below
+# and they must be configured in the host's proxy as well, copied from here.
 #
 # The policy below is the mirror `src/ui/README.md` specifies. The CSP repeats
 # the `<meta http-equiv>` from `index.html` and adds the one directive a meta tag

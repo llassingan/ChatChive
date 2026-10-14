@@ -32,33 +32,42 @@ npm run format:check  # Prettier
 The app is static files, so any host that can serve a folder will do, but the
 privacy policy needs real response headers and that rules some hosts out. GitHub
 Pages cannot set response headers at all: it would drop the `Content-Security-Policy`
-mirror and `X-Frame-Options`, leaving the clickjacking guard undelivered. The
-target is therefore **Cloudflare Pages**, which reads a `_headers` file from the
-publish directory.
+mirror and `X-Frame-Options`, leaving the clickjacking guard undelivered. This
+project deploys through **Dokploy**.
 
 `public/_headers` holds that policy. Vite copies `public/` into `dist/` verbatim,
-so the file ships as `dist/_headers`, which is where Cloudflare Pages reads it.
-`src/ui/README.md` records the policy the two copies have to match.
+so the file ships as `dist/_headers`. That file is the source of truth for the
+policy, and `src/ui/README.md` records the policy the copies have to match.
+`_headers` is a Cloudflare Pages / Netlify convention, though, and **Dokploy does
+not read it**: Dokploy serves the build through its own proxy, so the same four
+headers must be configured there (a Traefik middleware or the static server's
+config), taken from `dist/_headers`. This is the one piece of the deploy that
+cannot be expressed as a file in the repository, so it is the owner's step and it
+is **unverified**.
 
-The build uploads through `.github/workflows/deploy.yml`. Until the owner adds
-these three repository values, the workflow prints a skip notice and exits
-successfully rather than failing on every push:
+The build triggers a Dokploy **deployment webhook** through
+`.github/workflows/deploy.yml` after a push to `main`. Until the owner adds one
+repository secret, the workflow prints a skip notice and exits successfully
+rather than failing on every push:
 
-| Kind     | Name                       | Where to find it                                                         |
-| -------- | -------------------------- | ------------------------------------------------------------------------ |
-| Secret   | `CLOUDFLARE_API_TOKEN`     | Cloudflare dashboard, API Tokens, with Account > Cloudflare Pages > Edit |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`    | Cloudflare dashboard, account ID                                         |
-| Variable | `CLOUDFLARE_PAGES_PROJECT` | the Pages project name you created                                       |
+| Kind   | Name                     | Where to find it                                                                   |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------- |
+| Secret | `DOKPLOY_DEPLOY_WEBHOOK` | Dokploy, application, Deployments tab, Webhook URL (ends in `/api/deploy/<token>`) |
+
+The webhook URL is a bearer credential — anyone holding it can trigger a deploy —
+so it is stored as a secret and never echoed to the log. Add the secret, point
+Dokploy's application at this repository and branch `main`, and each push to
+`main` builds here and triggers the deploy.
 
 Steps for the owner:
 
-1. Create a Pages project (Direct Upload) and note its name.
-2. Add the two secrets and the variable above to the repository.
+1. Enable **Auto Deploy** on the Dokploy application and copy its Webhook URL.
+2. Add it as the `DOKPLOY_DEPLOY_WEBHOOK` secret on the repository.
 3. Push to `main`, or run the Deploy workflow manually.
 
-Push to `main` deploys to production; a pull request deploys to a preview URL and
-leaves production alone. **The live deploy is unverified.** It has not been run
-against a real Cloudflare project, because none exists yet.
+Pull requests do not deploy: the workflow runs on `main` and manual dispatch only,
+so an untrusted PR cannot reach the webhook. **The live deploy is unverified.** It
+has not been run against a real Dokploy instance, because none exists yet.
 
 ## Contributing
 

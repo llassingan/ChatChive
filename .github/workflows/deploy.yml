@@ -1,62 +1,53 @@
 name: Deploy
 
-# Static deploy to Cloudflare Pages (backlog E1-4). The build output in `dist/`
-# is uploaded as-is; Cloudflare Pages reads `dist/_headers` (authored in
-# `public/_headers`) and serves the CSP mirror as real response headers, which
-# is the reason this project targets Pages rather than GitHub Pages. GitHub
-# Pages cannot set response headers at all, so it cannot deliver the policy
-# `src/ui/README.md` specifies.
+# Deploy via the Dokploy webhook (backlog E1-4). `dist/` is built here and the
+# host pulls the deployment; the workflow itself only triggers it.
 #
-# The workflow is inert until the owner configures it. With no Cloudflare
-# project, no remote, and no credentials, a deploy job that failed on every push
-# would only train the owner to ignore a red X, so the job reports that deploy
-# is not configured and exits 0 instead. Configure three repository values and
-# the same jobs deploy with no edits to this file:
+# The webhook URL is a *secret* (`DOKPLOY_DEPLOY_WEBHOOK`), never a plain
+# variable and never written to the log. It carries the application's
+# `refreshToken`, which is a bearer credential: anyone holding the URL can
+# trigger a deploy, so it is masked by GitHub's secret store and passed to the
+# payload on the wire only.
 #
-#   Secret    CLOUDFLARE_API_TOKEN      Account > Cloudflare Pages > Edit
-#   Secret    CLOUDFLARE_ACCOUNT_ID     the account ID from the dashboard
-#   Variable  CLOUDFLARE_PAGES_PROJECT  the Pages project name
+# The workflow is inert until the owner configures it. With no secret a deploy
+# job that failed on every push would only train the owner to ignore a red X, so
+# the jobs report that deploy is not configured and exit 0 instead. Add the
+# secret and the same jobs deploy with no edits to this file:
 #
-# The live deploy is unverified: nothing here has run against a real Cloudflare
-# project, because none exists yet.
+#   Secret  DOKPLOY_DEPLOY_WEBHOOK  Dokploy > Application > Deployments >
+#                                   Webhook URL (ends in `/api/deploy/<token>`)
+#
+# The body sent is `{}`: Dokploy's generic webhook matches the application by
+# the token in the URL and checks the branch against the application's own
+# configuration, so no branch or payload fields are needed.
+#
+# The live deploy is unverified: nothing here has run against a real Dokploy
+# instance, because none exists yet.
 
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  # Lets the action attach the deployment and its alias URL to the commit or
-  # pull request, which is what makes the Cloudflare preview link clickable in
-  # the GitHub UI. The upload itself does not depend on it.
-  deployments: write
 
 jobs:
-  # Production: push to main, or a manual run. Never a pull request.
+  # Queue rather than cancel: a superseded push must still land before the next
+  # one starts, or the newest commit can be overwritten by the older deploy.
   deploy:
-    name: Deploy to Cloudflare Pages
-    if: github.event_name != 'pull_request'
+    name: Deploy via Dokploy
     runs-on: ubuntu-latest
-    # A deploy race is a real hazard on a busy main branch; queue rather than
-    # cancel, so a superseded push still lands before the next one starts.
     concurrency:
-      group: pages-deploy
+      group: dokploy-deploy
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
-
-      # One gate for every configuration value, so a half-configured repository
-      # is skipped rather than half-deployed.
       - name: Check deploy configuration
         id: config
         env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
         run: |
-          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_PROJECT" ]; then
+          if [ -z "$WEBHOOK" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
@@ -65,85 +56,27 @@ jobs:
       - name: Deploy is not configured
         if: steps.config.outputs.configured != 'true'
         run: |
-          echo "::notice title=Deploy not configured::Skipping deploy. Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets and the CLOUDFLARE_PAGES_PROJECT variable to enable it (README, Deploy)."
+          echo "::notice title=Deploy not configured::Skipping deploy. Add the DOKPLOY_DEPLOY_WEBHOOK secret to enable it (README, Deploy)."
 
-      - uses: actions/setup-node@v4
+      - name: Trigger the Dokploy webhook
         if: steps.config.outputs.configured == 'true'
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install
-        if: steps.config.outputs.configured == 'true'
-        run: npm ci
-
-      - name: Build
-        if: steps.config.outputs.configured == 'true'
-        run: npm run build
-
-      - name: Upload to Pages
-        if: steps.config.outputs.configured == 'true'
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=main
-
-  # Preview: a branch deploy per pull request, which Cloudflare publishes as
-  # pr-<number>.<project>.pages.dev without touching production. Secrets are not
-  # available to pull requests from forks, so those runs take the skip path and
-  # stay green: an untrusted PR cannot deploy, and does not go red for it.
-  preview:
-    name: Preview deploy (pull request)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: pages-preview-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check deploy configuration
-        id: config
         env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          WEBHOOK: ${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}
         run: |
-          if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_PROJECT" ]; then
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Preview deploy is not configured
-        if: steps.config.outputs.configured != 'true'
-        run: |
-          echo "::notice title=Preview deploy not configured::Skipping the preview deploy. Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets and the CLOUDFLARE_PAGES_PROJECT variable to enable it (README, Deploy)."
-
-      - uses: actions/setup-node@v4
-        if: steps.config.outputs.configured == 'true'
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install
-        if: steps.config.outputs.configured == 'true'
-        run: npm ci
-
-      - name: Build
-        if: steps.config.outputs.configured == 'true'
-        run: npm run build
-
-      - name: Upload preview to Pages
-        if: steps.config.outputs.configured == 'true'
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # The branch label is the pull request number, not the head branch
-          # name. A ref name can legally contain `$`, backticks and other shell
-          # metacharacters, and it would be interpolated into this command; a PR
-          # number is an integer. It also keeps one stable preview URL per pull
-          # request instead of a new one after every branch rename.
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=pr-${{ github.event.pull_request.number }}
+          # The URL is never echoed. `--fail-with-body` turns a 4xx/5xx into a
+          # failed step while still printing Dokploy's message (e.g. "Branch Not
+          # Match"), which is the diagnostic the owner needs; the URL itself
+          # stays out of the log because only the response body is printed.
+          status=$(curl --silent --show-error --fail-with-body \
+            --output /tmp/dokploy-response.txt \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --data '{}' \
+            "$WEBHOOK" || true)
+          echo "Dokploy responded with HTTP $status"
+          cat /tmp/dokploy-response.txt 2>/dev/null || true
+          case "$status" in
+            2*) exit 0 ;;
+            *) echo "::error title=Dokploy deploy failed::Webhook returned HTTP $status (see the response above)."; exit 1 ;;
+          esac

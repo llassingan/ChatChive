@@ -143,6 +143,12 @@ policy in `index.html`, change `public/_headers` in the same commit, and keep th
 two identical except for `frame-ancestors`. `src/ui/README.md` records the policy
 both files have to match.
 
+Note that `_headers` is a Cloudflare Pages / Netlify convention. The deploy host
+(Dokploy) does not read it, so the same four headers must also be set in the
+host's proxy config, copied from `dist/_headers`. Changing the policy is a
+three-place change when the host is wired: `index.html`, `public/_headers`, and
+the host's proxy.
+
 ## Reporting an export the app cannot read
 
 Open an issue with the "Unsupported export format" template. It asks for the

@@ -104,12 +104,14 @@ X-Content-Type-Options: nosniff
 ```
 
 This ships as `public/_headers`, which Vite copies verbatim into `dist/` at build
-time, so Cloudflare Pages (the E1-4 target, chosen because it honours response
-headers) reads it from the publish directory. `.github/workflows/deploy.yml`
-uploads `dist/`; the deploy itself is unverified until the owner wires a host.
-GitHub Pages cannot set response headers, so it would drop this policy entirely,
-including the `frame-ancestors` guard, and is documented in the README rather
-than pretended away.
+time. That file is the source of truth for the deploy headers. `_headers` is a
+Cloudflare Pages / Netlify convention and **Dokploy does not read it**: Dokploy
+serves the build through its own proxy (Traefik or the static server), so the same
+four headers have to be configured there, copied from `dist/_headers`. The deploy
+itself is unverified until the owner wires the host; `.github/workflows/deploy.yml`
+only triggers a Dokploy webhook. GitHub Pages cannot set response headers at all,
+so it would drop this policy entirely, including the `frame-ancestors` guard, and
+is documented in the README rather than pretended away.
 
 ## Accessibility: contrast log (R-25)
 
