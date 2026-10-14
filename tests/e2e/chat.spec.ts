@@ -52,11 +52,24 @@ test('bubbles align by sender and the newest message is at the bottom', async ({
   expect(outBox && inBox && outBox.x > inBox.x).toBe(true);
   expect(await outgoing.getAttribute('data-outgoing')).toBe('true');
 
-  // The list is scrolled to the bottom (F-VIEW-13).
-  const distance = await page
-    .locator('.chat-list')
-    .evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight);
-  expect(distance).toBeLessThanOrEqual(4);
+  // The list is scrolled to the bottom (F-VIEW-13). The arrival pin settles in
+  // stages after mount: the rows measure, then the sticky pill mounts and adds
+  // its own height, and the pin re-aims at the new bottom. On WebKit at
+  // 1440x900 those stages land up to 29 frames apart, so a single immediate read
+  // samples the list mid-flight and sees it tens of px short even though it is
+  // on its way (measured: 27px, the pill's own height). Poll instead of reading
+  // once, exactly as the scroll-to-bottom test below does: this asserts the
+  // arrived state rather than racing the settle. It does not produce that state
+  // — no write is issued here, unlike the visual suite's rejected earlier
+  // revision — so a list that genuinely rests short still fails, and now fails
+  // loudly instead of flakily.
+  await expect
+    .poll(() =>
+      page
+        .locator('.chat-list')
+        .evaluate((node) => node.scrollHeight - node.scrollTop - node.clientHeight),
+    )
+    .toBeLessThanOrEqual(4);
 });
 
 test('date separators appear per day and group the messages', async ({ page }) => {
