@@ -302,14 +302,46 @@ export function MessageList({ chat, session, search = null, jump = null }: Messa
   // the flow, so this boolean flips exactly when the list gains the pill's
   // height. It is a dependency of the pin below.
   const pillMounted = activeDay !== null;
+  // Measured total size is the *other* growth signal, and missing it was the F-1
+  // residual: the pin exits on a settled height, and until now the only thing
+  // that re-armed it was the pill mounting. The virtualizer re-measures the
+  // mounted rows and rewrites this number for several frames after they land (a
+  // row's seed estimate is replaced by its real height), so the list keeps
+  // growing after the pin has stopped. When that growth landed *after* the pill
+  // was already mounted, nothing re-armed the pin and the list rested short of
+  // the newest message. Under 4-way parallel load on desktop-light this was
+  // 107px (`top=75/182`, fully settled, no scroll-to-bottom button). Keying the
+  // pin on the number itself means any measured growth re-arms it, however late
+  // it arrives. It is a layout output, not an animation: it changes only when
+  // the content genuinely grew, so a still list does not restart the pin.
+  const measuredSize = Math.round(totalSize);
   const pinRaf = useRef<number | null>(null);
   const pinActive = useRef(false);
-  const releasePin = useCallback(() => {
+  // True once a real gesture (wheel, touch, pointer, key) has taken the list over
+  // from the arrival pin. It is what stops the pin from restarting when the
+  // virtualizer re-measures and grows the list *after* the reader has scrolled
+  // away: without it, the growth-driven effect re-run below would yank the reader
+  // back to the bottom. Cleared when the reader returns to the bottom on purpose
+  // (the scroll-to-bottom button).
+  const userLeftBottom = useRef(false);
+  // Cancel the pin without claiming the reader left the bottom. The effect
+  // cleanup uses this, not `releasePin`: a cleanup fires for every dependency
+  // change (including the growth re-runs that are the whole point), and treating
+  // those as reader input would disarm the pin permanently.
+  const cancelPin = useCallback(() => {
     pinActive.current = false;
     if (pinRaf.current !== null) cancelAnimationFrame(pinRaf.current);
   }, []);
+  const releasePin = useCallback(() => {
+    userLeftBottom.current = true;
+    cancelPin();
+  }, [cancelPin]);
   useEffect(() => {
     if (!atBottom) return;
+    // A growth-driven re-run must not restart the pin once the reader has taken
+    // over; only returning to the bottom (the button, which clears the flag)
+    // re-arms it.
+    if (userLeftBottom.current) return;
     pinActive.current = true;
     let frame = 0;
     let quiet = 0;
@@ -357,11 +389,13 @@ export function MessageList({ chat, session, search = null, jump = null }: Messa
       pinRaf.current = requestAnimationFrame(pin);
     };
     pinRaf.current = requestAnimationFrame(pin);
-    return releasePin;
-    // `pillMounted` is the growth signal, not a rendering input: when the pill
-    // mounts and adds its height, this effect re-runs and the pin restarts
-    // against the new height. See the note above.
-  }, [atBottom, releasePin, pillMounted]);
+    // `cancelPin`, not `releasePin`: a cleanup also runs for the growth re-runs
+    // above, and only real input may mark the reader as having left the bottom.
+    return cancelPin;
+    // `pillMounted` and `measuredSize` are growth signals, not rendering inputs:
+    // when either changes the list grew, and this effect re-runs to re-aim the
+    // pin at the new height. See the note above.
+  }, [atBottom, cancelPin, pillMounted, measuredSize]);
 
   // Move the reader to the selected match (E7-1). The row it lives in may not be
   // mounted at all — that is the whole point of a virtualized list — so this
@@ -443,7 +477,13 @@ export function MessageList({ chat, session, search = null, jump = null }: Messa
       const element = scrollRef.current;
       if (element) {
         const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
-        setAtBottom(distance < 80);
+        // While the arrival pin holds the list, a scroll event it caused must not
+        // be read as the reader leaving the bottom: the sizer can grow between
+        // the pin's write and this pass (the virtualizer replaces a row's seed
+        // estimate with its measured height), so `distance` reads large even
+        // though the pin is on its way there. Real input sets `userLeftBottom`
+        // first (`releasePin`), so a genuine scroll-up still flips this.
+        setAtBottom(userLeftBottom.current ? distance < 80 : true);
 
         // Sticky pill = the day of the last row whose top edge scrolled past the
         // top (E4-5). Pure helper, so the rule is unit-tested in layout.test.ts.
@@ -490,6 +530,7 @@ export function MessageList({ chat, session, search = null, jump = null }: Messa
   const scrollToBottom = useCallback(() => {
     const element = scrollRef.current;
     if (!element) return;
+    userLeftBottom.current = false;
     setAtBottom(true);
     element.scrollTop = element.scrollHeight;
   }, []);

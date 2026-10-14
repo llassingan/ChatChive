@@ -4,16 +4,16 @@ Small, hand-built stand-ins for real WhatsApp exports, used by the end-to-end
 tests. Nothing here is personal data (backlog E2-1 forbids committing the real
 sample export).
 
-| File                   | Shape                                                                                  |
-| ---------------------- | -------------------------------------------------------------------------------------- |
-| `export.zip`           | Android personal chat with a `.txt` + an image + a voice note                          |
-| `media.zip`            | One entry per media kind this sprint renders, plus a junk audio file and a missing one |
-| `broken-image.zip`     | One uncaptioned JPEG whose bytes will not decode, for the tile's hit test (E5-7)       |
+| File                   | Shape                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `export.zip`           | Android personal chat with a `.txt` + an image + a voice note                                                      |
+| `media.zip`            | One entry per media kind this sprint renders, plus a junk audio file and a missing one                             |
+| `broken-image.zip`     | One uncaptioned JPEG whose bytes will not decode, for the tile's hit test (E5-7)                                   |
 | `sprint7-bugs.zip`     | Interleaved multi-message runs and one empty body (`Sender:` with nothing after it), for the Sprint 7 defect specs |
-| `export.txt`           | Android text-only chat, no media, no zip                                               |
-| `large.txt`            | 5,001 messages over three days, for the virtualization check (E4-1)                    |
-| `script-injection.txt` | Message bodies carrying `<script>` and `<img onerror>`, for the S-5 test               |
-| `formatting.txt`       | Every inline marker, block code, quote, both list kinds, links and jumbo emoji (E4-6)  |
+| `export.txt`           | Android text-only chat, no media, no zip                                                                           |
+| `large.txt`            | 5,001 messages over three days, for the virtualization check (E4-1)                                                |
+| `script-injection.txt` | Message bodies carrying `<script>` and `<img onerror>`, for the S-5 test                                           |
+| `formatting.txt`       | Every inline marker, block code, quote, both list kinds, links and jumbo emoji (E4-6)                              |
 
 `export.zip` also carries the E6-4 visual baselines (`tests/e2e/visual.spec.ts`),
 which is why it holds real media rather than text alone: the baselines cover a
